@@ -61,10 +61,14 @@ const AdminReviews = () => {
         toast.error("Failed to delete review");
       }
     } else {
-      // Logic to actually flag or update a review could go here if the backend supports it.
-      // For now, we update local state.
-      setReviewsList(reviewsList.map((r) => r.id === id ? { ...r, status: action } : r));
-      toast.success(`Review status updated to ${action}`);
+      try {
+        await adminService.updateReviewStatus(id, action);
+        setReviewsList(reviewsList.map((r) => r.id === id ? { ...r, status: action } : r));
+        toast.success(`Review status updated to ${action}`);
+      } catch (error) {
+        console.error("Failed to update review status:", error);
+        toast.error("Failed to update review status");
+      }
     }
   };
 

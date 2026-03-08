@@ -12,13 +12,38 @@ export async function createReview(req, res) {
 
   const client = await pool.connect();
   try {
-    const result = await client.query(
-      `INSERT INTO reviews (id, user_id, booking_id, rating, title, comment) 
-       VALUES ($1, $2, $3, $4, $5, $6) 
-       RETURNING id, user_id, booking_id, rating, title, comment, created_at`,
-      [uuidv4(), req.user.id, bookingId, rating, title || null, comment || null]
+    // 1. Check if booking exists, belongs to user, and is COMPLETED
+    const bookingCheck = await client.query(
+      'SELECT id, status FROM bookings WHERE id = $1 AND user_id = $2',
+      [bookingId, req.user.id]
     );
-    res.status(201).json({ success: true, data: result.rows[0] });
+
+    if (bookingCheck.rows.length === 0) {
+      throw new ValidationError('Booking not found or you are not authorized');
+    }
+
+    if (bookingCheck.rows[0].status !== 'completed') {
+      throw new ValidationError('You can only review completed services');
+    }
+
+    // 2. Check if review already exists for this booking
+    const reviewCheck = await client.query(
+      'SELECT id FROM reviews WHERE booking_id = $1',
+      [bookingId]
+    );
+
+    if (reviewCheck.rows.length > 0) {
+      throw new ValidationError('You have already reviewed this service');
+    }
+
+    // 3. Create the review with default status 'pending' (for moderation)
+    const result = await client.query(
+      `INSERT INTO reviews (id, user_id, booking_id, rating, title, comment, status) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7) 
+       RETURNING id, user_id, booking_id, rating, title, comment, status, created_at`,
+      [uuidv4(), req.user.id, bookingId, rating, title || null, comment || null, 'pending']
+    );
+    res.status(201).json({ success: true, message: 'Review submitted for moderation', data: result.rows[0] });
   } finally {
     client.release();
   }

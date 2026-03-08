@@ -145,6 +145,11 @@ export const adminService = {
         await apiClient.delete(`/admin/reviews/${id}`);
     },
 
+    async updateReviewStatus(id: string, status: string): Promise<Review> {
+        const response = await apiClient.put<Review>(`/admin/reviews/${id}/status`, { status });
+        return response.data!;
+    },
+
     async getAllBookings(): Promise<Booking[]> {
         const response = await apiClient.get<Booking[]>('/admin/bookings');
         return response.data || [];

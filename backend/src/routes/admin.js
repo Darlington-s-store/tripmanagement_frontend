@@ -34,6 +34,7 @@ router.delete('/trips/:id', adminController.deleteTrip);
 // Reviews
 router.get('/reviews', adminController.getAllReviews);
 router.delete('/reviews/:id', adminController.deleteReview);
+router.put('/reviews/:id/status', adminController.updateReviewStatus);
 
 // Refunds
 router.get('/refunds', adminController.getRefunds);

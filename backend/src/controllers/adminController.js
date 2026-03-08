@@ -360,7 +360,7 @@ export async function getAllReviews(req, res) {
   const client = await pool.connect();
   try {
     const result = await client.query(`
-      SELECT r.id, r.user_id, u.full_name as user_name, r.booking_id, r.rating, r.comment, r.created_at 
+      SELECT r.id, r.user_id, u.full_name as user_name, r.booking_id, r.rating, r.title, r.comment, r.status, r.created_at 
       FROM reviews r
       JOIN users u ON r.user_id = u.id
       ORDER BY r.created_at DESC
@@ -381,6 +381,32 @@ export async function deleteReview(req, res) {
       [req.user.id, 'DELETE_REVIEW', `Deleted review ${id}`]);
 
     res.json({ success: true, message: 'Review deleted' });
+  } finally {
+    client.release();
+  }
+}
+
+export async function updateReviewStatus(req, res) {
+  const { id } = req.params;
+  const { status } = req.body;
+
+  if (!['pending', 'published', 'rejected', 'flagged'].includes(status)) {
+    throw new ValidationError('Invalid review status');
+  }
+
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      'UPDATE reviews SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *',
+      [status, id]
+    );
+
+    if (result.rows.length === 0) throw new NotFoundError('Review not found');
+
+    await client.query('INSERT INTO admin_logs (admin_id, action, details) VALUES ($1, $2, $3)',
+      [req.user.id, 'UPDATE_REVIEW_STATUS', `Updated review ${id} status to ${status}`]);
+
+    res.json({ success: true, message: `Review status updated to ${status}`, data: result.rows[0] });
   } finally {
     client.release();
   }

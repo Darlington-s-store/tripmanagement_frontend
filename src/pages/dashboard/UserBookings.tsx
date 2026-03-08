@@ -11,6 +11,7 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { bookingsService, Booking } from "@/services/bookings";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
+import ReviewDialog from "@/components/dashboard/ReviewDialog";
 
 const statusIcons: Record<string, any> = {
   confirmed: { icon: CheckCircle2, cls: "text-emerald-500 bg-emerald-50 border-emerald-100", label: "Confirmed" },
@@ -23,6 +24,8 @@ const UserBookings = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [filter, setFilter] = useState("all");
+  const [selectedBooking, setSelectedBooking] = useState<{ id: string; name: string } | null>(null);
+  const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
 
   useEffect(() => {
     loadBookings();
@@ -163,7 +166,14 @@ const UserBookings = () => {
                           </Button>
                         )}
                         {b.status === "completed" && (
-                          <Button size="sm" className="rounded-xl h-10 px-4 gap-1.5">
+                          <Button
+                            size="sm"
+                            className="rounded-xl h-10 px-4 gap-1.5"
+                            onClick={() => {
+                              setSelectedBooking({ id: b.id, name: b.service_name || "Accommodation/Service" });
+                              setIsReviewDialogOpen(true);
+                            }}
+                          >
                             <Star className="h-3.5 w-3.5" /> Review
                           </Button>
                         )}
@@ -190,6 +200,14 @@ const UserBookings = () => {
             <Link to="/destinations">Find Inspiration</Link>
           </Button>
         </div>
+
+        <ReviewDialog
+          isOpen={isReviewDialogOpen}
+          onClose={() => setIsReviewDialogOpen(false)}
+          bookingId={selectedBooking?.id || ""}
+          serviceName={selectedBooking?.name || ""}
+          onSuccess={loadBookings}
+        />
       </div>
     </DashboardLayout>
   );

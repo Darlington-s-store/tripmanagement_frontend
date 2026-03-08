@@ -8,6 +8,7 @@ export interface Review {
   title?: string;
   comment?: string;
   created_at: string;
+  status: string;
   booking_type?: string;
   reference_id?: string;
 }
