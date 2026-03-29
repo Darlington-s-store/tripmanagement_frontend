@@ -9,8 +9,9 @@ import { authService } from "@/services/auth";
 import { useAuth } from "@/context/AuthContext";
 
 const UserSettings = () => {
-  const { user } = useAuth();
+  const { user, toggleMFA } = useAuth();
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [isMfaLoading, setIsMfaLoading] = useState(false);
   const [isSavingPreferences, setIsSavingPreferences] = useState(false);
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: "",
@@ -133,6 +134,39 @@ const UserSettings = () => {
               {isChangingPassword && <Loader className="mr-2 h-4 w-4 animate-spin" />}
               Update Password
             </Button>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-border bg-card p-6">
+          <h3 className="mb-4 flex items-center gap-2 font-display text-lg font-semibold">
+            <Shield className="h-5 w-5 text-primary" /> Security
+          </h3>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium">Two-Factor Authentication (MFA)</p>
+                <p className="text-sm text-muted-foreground">Add an extra layer of security to your account. You will receive a 6-digit code via email when logging in.</p>
+              </div>
+              <div className="flex items-center gap-3">
+                {isMfaLoading && <Loader className="h-4 w-4 animate-spin text-primary" />}
+                <Switch
+                  checked={user?.two_factor_enabled || false}
+                  onCheckedChange={async (checked) => {
+                    setIsMfaLoading(true);
+                    try {
+                      await toggleMFA(checked);
+                      toast.success(`Multi-Factor Authentication ${checked ? "enabled" : "disabled"}`);
+                    } catch (error: any) {
+                      console.error("Failed to toggle MFA:", error);
+                      toast.error(error.message || "Failed to toggle MFA");
+                    } finally {
+                      setIsMfaLoading(false);
+                    }
+                  }}
+                  disabled={isMfaLoading}
+                />
+              </div>
+            </div>
           </div>
         </div>
 

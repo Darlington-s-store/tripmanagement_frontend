@@ -11,12 +11,15 @@ export interface User {
   preferences?: any;
   created_at?: string;
   requires_password_change?: boolean;
+  two_factor_enabled?: boolean;
 }
 
 export interface AuthResponse {
-  user: User;
-  token: string;
-  refreshToken: string;
+  user?: User;
+  token?: string;
+  refreshToken?: string;
+  mfaRequired?: boolean;
+  email?: string;
 }
 
 export const authService = {
@@ -38,9 +41,11 @@ export const authService = {
       email,
       password,
     });
-    const { token, refreshToken } = response.data!;
-    this.setToken(token);
-    this.setRefreshToken(refreshToken);
+    const { token, refreshToken, mfaRequired } = response.data!;
+    if (!mfaRequired && token && refreshToken) {
+      this.setToken(token);
+      this.setRefreshToken(refreshToken);
+    }
     return response.data!;
   },
 
@@ -49,9 +54,24 @@ export const authService = {
       email,
       password,
     });
+    const { token, refreshToken, mfaRequired } = response.data!;
+    if (!mfaRequired && token && refreshToken) {
+      this.setToken(token);
+      this.setRefreshToken(refreshToken);
+    }
+    return response.data!;
+  },
+
+  async verifyMFA(email: string, code: string): Promise<AuthResponse> {
+    const response = await apiClient.post<AuthResponse>('/auth/verify-mfa', {
+      email,
+      code,
+    });
     const { token, refreshToken } = response.data!;
-    this.setToken(token);
-    this.setRefreshToken(refreshToken);
+    if (token && refreshToken) {
+      this.setToken(token);
+      this.setRefreshToken(refreshToken);
+    }
     return response.data!;
   },
 
@@ -88,6 +108,13 @@ export const authService = {
   async updatePreferences(preferences: any): Promise<any> {
     const response = await apiClient.put<any>('/auth/preferences', {
       preferences,
+    });
+    return response.data!;
+  },
+
+  async toggleMFA(enabled: boolean): Promise<any> {
+    const response = await apiClient.put<any>('/auth/toggle-mfa', {
+      enabled,
     });
     return response.data!;
   },

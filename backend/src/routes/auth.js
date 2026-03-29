@@ -18,6 +18,10 @@ router.post('/admin-login', (req, res, next) => {
   authController.adminLogin(req, res).catch(next);
 });
 
+router.post('/verify-mfa', (req, res, next) => {
+  authController.verifyMFA(req, res).catch(next);
+});
+
 router.post('/forgot-password', (req, res, next) => {
   authController.forgotPassword(req, res).catch(next);
 });
@@ -49,6 +53,10 @@ router.put('/change-password', authenticateToken, (req, res, next) => {
 
 router.put('/preferences', authenticateToken, (req, res, next) => {
   authController.updatePreferences(req, res).catch(next);
+});
+
+router.put('/toggle-mfa', authenticateToken, (req, res, next) => {
+  authController.toggleMFA(req, res).catch(next);
 });
 
 export default router;

@@ -112,13 +112,14 @@ app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/forgot-password', authLimiter);
 
 // CSRF Protection Configuration
+const isProduction = process.env.NODE_ENV === 'production';
 const csrf = doubleCsrf({
   getSecret: () => process.env.JWT_SECRET || 'fallback-secret-for-csrf',
   cookieName: 'ps-csrf-secret',
   cookieOptions: {
     httpOnly: true,
-    sameSite: 'none',
-    secure: true, // Required for SameSite=None, allowed on localhost HTTP
+    sameSite: isProduction ? 'none' : 'lax',
+    secure: isProduction, // only require HTTPS in production; HTTP works in dev
   },
   size: 64,
   ignoredMethods: ['GET', 'HEAD', 'OPTIONS'],

@@ -57,6 +57,8 @@ import GuideDetail from "./pages/GuideDetail";
 import BookingConfirmation from "./pages/BookingConfirmation";
 import AdminRefunds from "./pages/admin/AdminRefunds";
 import AdminDisputes from "./pages/admin/AdminDisputes";
+import DestinationDetail from "./pages/trips/DestinationDetail";
+import BookingDetail from "./pages/dashboard/BookingDetail";
 
 const queryClient = new QueryClient();
 
@@ -78,6 +80,7 @@ const App = () => (
             <Route path="/transport" element={<Transport />} />
             <Route path="/itinerary" element={<ItineraryPlanner />} />
             <Route path="/destinations" element={<Destinations />} />
+            <Route path="/destinations/:id" element={<DestinationDetail />} />
             <Route path="/trips/new" element={<PlanTrip />} />
             <Route path="/trips/:id" element={<TripDetail />} />
             <Route path="/checkout" element={<Checkout />} />
@@ -96,6 +99,7 @@ const App = () => (
             {/* User Dashboard */}
             <Route path="/dashboard" element={<ProtectedRoute allowedRoles={['user', 'admin']}><UserDashboard /></ProtectedRoute>} />
             <Route path="/dashboard/bookings" element={<ProtectedRoute><UserBookings /></ProtectedRoute>} />
+            <Route path="/dashboard/bookings/:id" element={<ProtectedRoute><BookingDetail /></ProtectedRoute>} />
             <Route path="/dashboard/profile" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
             <Route path="/dashboard/itineraries" element={<ProtectedRoute><UserItineraries /></ProtectedRoute>} />
             <Route path="/dashboard/reviews" element={<ProtectedRoute><UserReviews /></ProtectedRoute>} />

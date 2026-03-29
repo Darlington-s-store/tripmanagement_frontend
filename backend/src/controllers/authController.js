@@ -168,11 +168,66 @@ export async function login(req, res) {
       throw new UnauthorizedError('Admin users must use admin login endpoint');
     }
 
-    // Success - reset attempts
+    // Success - reset attempts and update tracking
     await client.query(
-      'UPDATE users SET failed_login_attempts = 0, lock_until = NULL, last_login = CURRENT_TIMESTAMP WHERE id = $1',
-      [user.id]
+      'UPDATE users SET failed_login_attempts = 0, lock_until = NULL, last_login = CURRENT_TIMESTAMP, last_ip = $1, last_user_agent = $2 WHERE id = $3',
+      [ipAddress, userAgent, user.id]
     );
+
+    // Check for Two-Factor Authentication
+    if (user.two_factor_enabled) {
+      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+      const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+      await client.query(
+        'UPDATE users SET two_factor_code = $1, two_factor_expiry = $2 WHERE id = $3',
+        [otpCode, otpExpiry, user.id]
+      );
+
+      // Send OTP via email
+      const otpTemplate = `
+        <div style="font-family: 'Inter', sans-serif; background-color: #f8fafc; padding: 40px; color: #1e293b; max-width: 600px; margin: 0 auto; border-radius: 16px;">
+          <div style="text-align: center; margin-bottom: 32px;">
+            <span style="background: #2D3FE6; color: white; padding: 8px 16px; border-radius: 99px; font-weight: 600; font-size: 14px;">SECURITY VERIFICATION</span>
+          </div>
+          <div style="background: white; padding: 32px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);">
+            <h2 style="margin: 0 0 16px 0; color: #0f172a; font-size: 24px; text-align: center;">Your Verification Code</h2>
+            <p style="color: #64748b; font-size: 16px; line-height: 1.6; text-align: center; margin-bottom: 32px;">
+              Enter the following code to complete your login to TripEase Ghana.
+            </p>
+            <div style="background: #f1f5f9; padding: 24px; border-radius: 8px; text-align: center; margin-bottom: 32px;">
+              <span style="font-family: 'Courier New', monospace; font-size: 36px; font-weight: 700; letter-spacing: 8px; color: #2D3FE6;">${otpCode}</span>
+            </div>
+            <p style="color: #94a3b8; font-size: 13px; text-align: center; margin: 0;">
+              This code will expire in 10 minutes. If you didn't request this, please secure your account immediately.
+            </p>
+          </div>
+          <p style="text-align: center; color: #94a3b8; font-size: 12px; margin-top: 32px;">
+            &copy; ${new Date().getFullYear()} TripEase Ghana. All rights reserved.
+          </p>
+        </div>
+      `;
+
+      await sendEmail({
+        email: user.email,
+        subject: `${otpCode} is your TripEase verification code`,
+        message: `Your verification code is ${otpCode}. It expires in 10 minutes.`,
+        html: otpTemplate
+      });
+
+      await logSecurityEvent({
+        userId: user.id,
+        eventType: 'MFA_REQUESTED',
+        ipAddress,
+        userAgent
+      });
+
+      return res.json({
+        success: true,
+        mfaRequired: true,
+        email: user.email
+      });
+    }
 
     const accessToken = generateToken({ id: user.id, email: user.email, role: user.role });
     const refreshToken = generateRefreshToken({ id: user.id });
@@ -209,6 +264,8 @@ export async function login(req, res) {
 
 export async function adminLogin(req, res) {
   const { email, password } = req.body;
+  const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+  const userAgent = req.headers['user-agent'];
 
   if (!email || !password) {
     throw new ValidationError('Email and password are required');
@@ -220,18 +277,95 @@ export async function adminLogin(req, res) {
     const user = result.rows[0];
 
     if (!user) {
+      await logSecurityEvent({
+        eventType: 'ADMIN_LOGIN_FAILURE',
+        ipAddress,
+        userAgent,
+        details: { email, reason: 'Admin user not found' }
+      });
       throw new UnauthorizedError('Invalid admin credentials');
     }
 
     const passwordMatch = await comparePassword(password, user.password_hash);
     if (!passwordMatch) {
+      await logSecurityEvent({
+        userId: user.id,
+        eventType: 'ADMIN_LOGIN_FAILURE',
+        ipAddress,
+        userAgent,
+        details: { email, reason: 'Invalid password' }
+      });
       throw new UnauthorizedError('Invalid admin credentials');
     }
+
+    // Check for Two-Factor Authentication
+    if (user.two_factor_enabled) {
+      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+      const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
+
+      await client.query(
+        'UPDATE users SET two_factor_code = $1, two_factor_expiry = $2 WHERE id = $3',
+        [otpCode, otpExpiry, user.id]
+      );
+
+      const otpTemplate = `
+        <div style="font-family: 'Inter', sans-serif; background-color: #f8fafc; padding: 40px; color: #1e293b; max-width: 600px; margin: 0 auto; border-radius: 16px;">
+          <div style="text-align: center; margin-bottom: 32px;">
+            <span style="background: #2D3FE6; color: white; padding: 8px 16px; border-radius: 99px; font-weight: 600; font-size: 14px;">ADMIN VERIFICATION</span>
+          </div>
+          <div style="background: white; padding: 32px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);">
+            <h2 style="margin: 0 0 16px 0; color: #0f172a; font-size: 24px; text-align: center;">Admin Security Code</h2>
+            <p style="color: #64748b; font-size: 16px; line-height: 1.6; text-align: center; margin-bottom: 32px;">
+              Enter the following code to access the TripEase Ghana Administration Panel.
+            </p>
+            <div style="background: #f1f5f9; padding: 24px; border-radius: 8px; text-align: center; margin-bottom: 32px;">
+              <span style="font-family: 'Courier New', monospace; font-size: 36px; font-weight: 700; letter-spacing: 8px; color: #2D3FE6;">${otpCode}</span>
+            </div>
+            <p style="color: #ef4444; font-size: 13px; text-align: center; margin: 0; font-weight: 500;">
+              This is a sensitive administrative action. Code expires in 10 minutes.
+            </p>
+          </div>
+        </div>
+      `;
+
+      await sendEmail({
+        email: user.email,
+        subject: `[ADMIN] ${otpCode} is your security verification code`,
+        message: `Admin verification code: ${otpCode}`,
+        html: otpTemplate
+      });
+
+      await logSecurityEvent({
+        userId: user.id,
+        eventType: 'ADMIN_MFA_REQUESTED',
+        ipAddress,
+        userAgent
+      });
+
+      return res.json({
+        success: true,
+        mfaRequired: true,
+        email: user.email
+      });
+    }
+
+    // Update tracking
+    await client.query(
+      'UPDATE users SET last_login = CURRENT_TIMESTAMP, last_ip = $1, last_user_agent = $2 WHERE id = $3',
+      [ipAddress, userAgent, user.id]
+    );
 
     const accessToken = generateToken({ id: user.id, email: user.email, role: user.role });
     const refreshToken = generateRefreshToken({ id: user.id });
 
     await client.query('UPDATE users SET refresh_token = $1 WHERE id = $2', [refreshToken, user.id]);
+
+    await logSecurityEvent({
+      userId: user.id,
+      eventType: 'ADMIN_LOGIN_SUCCESS',
+      ipAddress,
+      userAgent
+    });
 
     res.json({
       success: true,
@@ -252,6 +386,72 @@ export async function adminLogin(req, res) {
   }
 }
 
+export async function verifyMFA(req, res) {
+  const { email, code } = req.body;
+  const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+  const userAgent = req.headers['user-agent'];
+
+  if (!email || !code) {
+    throw new ValidationError('Email and verification code are required');
+  }
+
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      'SELECT * FROM users WHERE email = $1 AND two_factor_code = $2 AND two_factor_expiry > NOW()',
+      [email, code]
+    );
+    const user = result.rows[0];
+
+    if (!user) {
+      await logSecurityEvent({
+        eventType: 'MFA_FAILURE',
+        ipAddress,
+        userAgent,
+        details: { email, reason: 'Invalid or expired code' }
+      });
+      throw new UnauthorizedError('Invalid or expired verification code');
+    }
+
+    // Success - clear MFA and reset flags
+    await client.query(
+      'UPDATE users SET two_factor_code = NULL, two_factor_expiry = NULL, failed_login_attempts = 0, lock_until = NULL, last_login = CURRENT_TIMESTAMP, last_ip = $1, last_user_agent = $2 WHERE id = $3',
+      [ipAddress, userAgent, user.id]
+    );
+
+    const accessToken = generateToken({ id: user.id, email: user.email, role: user.role });
+    const refreshToken = generateRefreshToken({ id: user.id });
+
+    await client.query('UPDATE users SET refresh_token = $1 WHERE id = $2', [refreshToken, user.id]);
+
+    await logSecurityEvent({
+      userId: user.id,
+      eventType: 'MFA_SUCCESS',
+      ipAddress,
+      userAgent
+    });
+
+    res.json({
+      success: true,
+      message: 'Email verification successful',
+      data: {
+        user: {
+          id: user.id,
+          email: user.email,
+          full_name: user.full_name,
+          role: user.role,
+          avatar_url: user.avatar_url,
+          requires_password_change: user.requires_password_change
+        },
+        token: accessToken,
+        refreshToken,
+      },
+    });
+  } finally {
+    client.release();
+  }
+}
+
 export async function getProfile(req, res) {
   if (!req.user) {
     throw new UnauthorizedError('User not authenticated');
@@ -259,7 +459,7 @@ export async function getProfile(req, res) {
 
   const client = await pool.connect();
   try {
-    const result = await client.query('SELECT id, email, full_name, phone, avatar_url, bio, role, created_at FROM users WHERE id = $1', [req.user.id]);
+    const result = await client.query('SELECT id, email, full_name, phone, avatar_url, bio, role, two_factor_enabled, created_at FROM users WHERE id = $1', [req.user.id]);
     const user = result.rows[0];
 
     if (!user) {
@@ -356,6 +556,43 @@ export async function updatePreferences(req, res) {
       success: true,
       message: 'Preferences updated successfully',
       data: result.rows[0].preferences,
+    });
+  } finally {
+    client.release();
+  }
+}
+
+export async function toggleMFA(req, res) {
+  if (!req.user) {
+    throw new UnauthorizedError('User not authenticated');
+  }
+
+  const { enabled } = req.body;
+
+  if (typeof enabled !== 'boolean') {
+    throw new ValidationError('Enabled status must be a boolean');
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query(
+      'UPDATE users SET two_factor_enabled = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+      [enabled, req.user.id]
+    );
+
+    // Log security event
+    await logSecurityEvent({
+      userId: req.user.id,
+      eventType: enabled ? 'MFA_ENABLED' : 'MFA_DISABLED',
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+      details: { method: 'EMAIL' }
+    });
+
+    res.json({
+      success: true,
+      message: `Multi-Factor Authentication ${enabled ? 'enabled' : 'disabled'} successfully`,
+      data: { two_factor_enabled: enabled }
     });
   } finally {
     client.release();
