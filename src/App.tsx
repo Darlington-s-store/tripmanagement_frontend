@@ -30,6 +30,7 @@ import AdminUsers from "./pages/admin/AdminUsers";
 import AdminCreateUser from "./pages/admin/AdminCreateUser";
 import AdminEditUser from "./pages/admin/AdminEditUser";
 import AdminUserActivity from "./pages/admin/AdminUserActivity";
+import AdminResetPassword from "./pages/admin/AdminResetPassword";
 import AdminDestinations from "./pages/admin/AdminDestinations";
 import AdminAttractions from "./pages/admin/AdminAttractions";
 import AdminCategories from "./pages/admin/AdminCategories";
@@ -121,6 +122,7 @@ const App = () => (
             <Route path="/admin/users/new" element={<ProtectedRoute allowedRoles={['admin']}><AdminCreateUser /></ProtectedRoute>} />
             <Route path="/admin/users/:id/edit" element={<ProtectedRoute allowedRoles={['admin']}><AdminEditUser /></ProtectedRoute>} />
             <Route path="/admin/users/:id/activity" element={<ProtectedRoute allowedRoles={['admin']}><AdminUserActivity /></ProtectedRoute>} />
+            <Route path="/admin/users/:id/reset-password" element={<ProtectedRoute allowedRoles={['admin']}><AdminResetPassword /></ProtectedRoute>} />
             <Route path="/admin/destinations" element={<ProtectedRoute allowedRoles={['admin']}><AdminDestinations /></ProtectedRoute>} />
             <Route path="/admin/hotels" element={<ProtectedRoute allowedRoles={['admin']}><AdminHotels /></ProtectedRoute>} />
             <Route path="/admin/attractions" element={<ProtectedRoute allowedRoles={['admin']}><AdminAttractions /></ProtectedRoute>} />

@@ -262,10 +262,7 @@ const AdminUsers = () => {
                             <Edit className="h-3.5 w-3.5" /> Edit Profile
                           </DropdownMenuItem>
 
-                          <DropdownMenuItem className="gap-2 rounded-lg py-2" onClick={() => {
-                            setSelectedUser(u);
-                            setIsResetPasswordOpen(true);
-                          }}>
+                          <DropdownMenuItem className="gap-2 rounded-lg py-2" onClick={() => navigate(`/admin/users/${u.id}/reset-password`)}>
                             <Key className="h-3.5 w-3.5" /> Reset Password
                           </DropdownMenuItem>
 
