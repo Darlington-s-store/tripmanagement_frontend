@@ -9,5 +9,5 @@ CREATE TABLE IF NOT EXISTS security_events (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_security_events_user_id ON security_events(user_id);
-CREATE INDEX idx_security_events_event_type ON security_events(event_type);
+CREATE INDEX IF NOT EXISTS idx_security_events_user_id ON security_events(user_id);
+CREATE INDEX IF NOT EXISTS idx_security_events_event_type ON security_events(event_type);

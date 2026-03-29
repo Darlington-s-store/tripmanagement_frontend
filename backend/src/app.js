@@ -20,6 +20,8 @@ import providerRoutes from './routes/provider.js';
 import adminRoutes from './routes/admin.js';
 import destinationsRoutes from './routes/destinations.js';
 import transportRoutes from './routes/transport.js';
+import flightsRoutes from './routes/flights.js';
+import notificationsRoutes from './routes/notifications.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
 dotenv.config();
@@ -153,6 +155,8 @@ app.use('/api/provider', providerRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/destinations', destinationsRoutes);
 app.use('/api/transport', transportRoutes);
+app.use('/api/flights', flightsRoutes);
+app.use('/api/notifications', notificationsRoutes);
 
 
 // Health check endpoint
