@@ -55,12 +55,12 @@ const Index = () => {
             </div>
 
             <h1 className="font-display text-5xl font-extrabold leading-[1.1] text-white md:text-7xl lg:text-8xl tracking-tight animate-fade-in">
-              Travel Ghana <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-primary">With Ease.</span>
+              Trip <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-primary">Management.</span>
             </h1>
 
             <p className="max-w-xl text-lg md:text-xl text-slate-300 animate-fade-in opacity-90 leading-relaxed">
-              Your all-in-one travel companion for West Africa. Discover hidden gems, book premium stays, and find local experts — all powered by TripEase.
+              Your all-in-one travel planning and management companion. Discover destinations, plan custom itineraries, and manage every detail of your journey.
             </p>
 
             {/* Premium Glassmorphic Search */}
@@ -111,13 +111,13 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Why TripEase - Modern Features Grid */}
+      {/* Why Trip Management - Modern Features Grid */}
       <section className="py-24 bg-white dark:bg-slate-950">
         <div className="container">
           <div className="mb-16 text-center max-w-3xl mx-auto space-y-4">
             <h2 className="font-display text-base font-bold uppercase tracking-widest text-primary">The Future of Travel</h2>
-            <h3 className="text-4xl font-bold tracking-tight md:text-5xl">Your Complete <span className="italic text-primary">Ghanaian</span> Toolkit</h3>
-            <p className="text-lg text-slate-500">We've built everything you need to navigate Ghana safely, affordably, and authentically.</p>
+            <h3 className="text-4xl font-bold tracking-tight md:text-5xl">Your Complete <span className="italic text-primary">Trip Management</span> Toolkit</h3>
+            <p className="text-lg text-slate-500">We've built everything you need to navigate your journeys safely, affordably, and authentically.</p>
           </div>
 
           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
@@ -183,8 +183,8 @@ const Index = () => {
           <div className="grid md:grid-cols-2 items-center gap-16">
             <div className="space-y-8">
               <div className="space-y-4">
-                <h2 className="text-4xl font-bold tracking-tight md:text-5xl">Your Journey, <br /><span className="text-primary italic">Perfectly Planned.</span></h2>
-                <p className="text-lg text-slate-500">TripEase simplifies the complex logistics of cross-region travel in Ghana, so you can focus on making memories.</p>
+                <h2 className="text-4xl font-bold tracking-tight md:text-5xl">Your Journey, <br /><span className="text-primary italic">Perfectly Managed.</span></h2>
+                <p className="text-lg text-slate-500">Trip Management simplifies the complex logistics of cross-region travel, so you can focus on making memories.</p>
               </div>
 
               <div className="space-y-6">
@@ -233,8 +233,8 @@ const Index = () => {
           <div className="absolute bottom-0 left-0 p-20 opacity-10 blur-3xl bg-emerald-400 rounded-full -translate-x-1/2 translate-y-1/2" />
 
           <div className="relative z-10 max-w-2xl mx-auto space-y-8">
-            <h2 className="text-4xl font-extrabold md:text-6xl tracking-tight leading-tight">Ready to start your <br />Ghanaian adventure?</h2>
-            <p className="text-xl text-white/80">Join 50,000+ travellers who have discovered the warmth and wonder of the Gold Coast with TripEase.</p>
+            <h2 className="text-4xl font-extrabold md:text-6xl tracking-tight leading-tight">Ready to start your <br />trip management?</h2>
+            <p className="text-xl text-white/80">Join 50,000+ travellers who have discovered the power of seamless trip management.</p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Button size="lg" className="bg-white text-primary hover:bg-slate-100 rounded-2xl h-16 px-10 font-bold text-xl shadow-xl w-full sm:w-auto" asChild>
                 <Link to="/register">Join the Community</Link>

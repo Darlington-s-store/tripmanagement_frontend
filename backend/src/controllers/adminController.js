@@ -2,6 +2,7 @@ import pool from '../config/database.js';
 import { UnauthorizedError, NotFoundError, ValidationError } from '../utils/errors.js';
 import bcrypt from 'bcryptjs';
 import { sendEmail } from '../utils/email.js';
+import { logAdminAction } from '../utils/logger.js';
 
 export async function getDashboard(req, res) {
   if (!req.user) throw new UnauthorizedError('Not authenticated');
@@ -85,9 +86,12 @@ export async function createUser(req, res) {
       [email, hashedPassword, fullName, phone, role || 'user']
     );
 
-    // Initial log
-    await client.query('INSERT INTO admin_logs (admin_id, action, details) VALUES ($1, $2, $3)',
-      [req.user.id, 'CREATE_USER', `Created user ${email} with role ${role}`]);
+    // Enhanced logging
+    await logAdminAction(req, 'CREATE_USER', {
+      resourceType: 'user',
+      resourceId: result.rows[0].id,
+      details: `Created user ${email} with role ${role}`
+    });
 
     res.status(201).json({ success: true, message: 'User created successfully', data: result.rows[0] });
   } finally {
@@ -110,8 +114,11 @@ export async function resetUserPassword(req, res) {
     const hashedPassword = await bcrypt.hash(password, 10);
     await client.query('UPDATE users SET password_hash = $1, requires_password_change = true WHERE id = $2', [hashedPassword, id]);
 
-    await client.query('INSERT INTO admin_logs (admin_id, action, details) VALUES ($1, $2, $3)',
-      [req.user.id, 'RESET_PASSWORD', `Reset password for user ${id}`]);
+    await logAdminAction(req, 'RESET_PASSWORD', {
+      resourceType: 'user',
+      resourceId: id,
+      details: `Reset password for user ${id}`
+    });
 
     // Send notification email
     try {
@@ -190,8 +197,11 @@ export async function updateUser(req, res) {
     );
     if (result.rows.length === 0) throw new NotFoundError('User not found');
 
-    await client.query('INSERT INTO admin_logs (admin_id, action, details) VALUES ($1, $2, $3)',
-      [req.user.id, 'UPDATE_USER', `Updated user ${id}`]);
+    await logAdminAction(req, 'UPDATE_USER', {
+      resourceType: 'user',
+      resourceId: id,
+      details: `Updated user ${id}`
+    });
 
     res.json({ success: true, message: 'User updated', data: result.rows[0] });
   } finally {
@@ -205,8 +215,11 @@ export async function deleteUser(req, res) {
   try {
     await client.query('DELETE FROM users WHERE id = $1', [id]);
 
-    await client.query('INSERT INTO admin_logs (admin_id, action, details) VALUES ($1, $2, $3)',
-      [req.user.id, 'DELETE_USER', `Deleted user ${id}`]);
+    await logAdminAction(req, 'DELETE_USER', {
+      resourceType: 'user',
+      resourceId: id,
+      details: `Deleted user ${id}`
+    });
 
     res.json({ success: true, message: 'User deleted' });
   } finally {
@@ -260,8 +273,11 @@ export async function updateBooking(req, res) {
     );
     if (result.rows.length === 0) throw new NotFoundError('Booking not found');
 
-    await client.query('INSERT INTO admin_logs (admin_id, action, details) VALUES ($1, $2, $3)',
-      [req.user.id, 'UPDATE_BOOKING', `Updated booking ${id} to ${status}`]);
+    await logAdminAction(req, 'UPDATE_BOOKING', {
+      resourceType: 'booking',
+      resourceId: id,
+      details: `Updated booking ${id} to ${status}`
+    });
 
     // Send transition emails
     if (status === 'confirmed') {
@@ -377,8 +393,11 @@ export async function deleteReview(req, res) {
   try {
     await client.query('DELETE FROM reviews WHERE id = $1', [id]);
 
-    await client.query('INSERT INTO admin_logs (admin_id, action, details) VALUES ($1, $2, $3)',
-      [req.user.id, 'DELETE_REVIEW', `Deleted review ${id}`]);
+    await logAdminAction(req, 'DELETE_REVIEW', {
+      resourceType: 'review',
+      resourceId: id,
+      details: `Deleted review ${id}`
+    });
 
     res.json({ success: true, message: 'Review deleted' });
   } finally {
@@ -403,8 +422,11 @@ export async function updateReviewStatus(req, res) {
 
     if (result.rows.length === 0) throw new NotFoundError('Review not found');
 
-    await client.query('INSERT INTO admin_logs (admin_id, action, details) VALUES ($1, $2, $3)',
-      [req.user.id, 'UPDATE_REVIEW_STATUS', `Updated review ${id} status to ${status}`]);
+    await logAdminAction(req, 'UPDATE_REVIEW_STATUS', {
+      resourceType: 'review',
+      resourceId: id,
+      details: `Updated review ${id} status to ${status}`
+    });
 
     res.json({ success: true, message: `Review status updated to ${status}`, data: result.rows[0] });
   } finally {
@@ -433,8 +455,11 @@ export async function updateRefund(req, res) {
     );
     if (result.rows.length === 0) throw new NotFoundError('Refund not found');
 
-    await client.query('INSERT INTO admin_logs (admin_id, action, details) VALUES ($1, $2, $3)',
-      [req.user.id, 'UPDATE_REFUND', `Updated refund ${id} to ${status}`]);
+    await logAdminAction(req, 'UPDATE_REFUND', {
+      resourceType: 'refund',
+      resourceId: id,
+      details: `Updated refund ${id} to ${status}`
+    });
 
     res.json({ success: true, message: 'Refund updated', data: result.rows[0] });
   } finally {
@@ -463,8 +488,11 @@ export async function updateDispute(req, res) {
     );
     if (result.rows.length === 0) throw new NotFoundError('Dispute not found');
 
-    await client.query('INSERT INTO admin_logs (admin_id, action, details) VALUES ($1, $2, $3)',
-      [req.user.id, 'UPDATE_DISPUTE', `Updated dispute ${id} to ${status}`]);
+    await logAdminAction(req, 'UPDATE_DISPUTE', {
+      resourceType: 'dispute',
+      resourceId: id,
+      details: `Updated dispute ${id} to ${status}`
+    });
 
     res.json({ success: true, message: 'Dispute updated', data: result.rows[0] });
   } finally {
@@ -475,26 +503,57 @@ export async function updateDispute(req, res) {
 export async function getAnalytics(req, res) {
   const client = await pool.connect();
   try {
-    const [monthly, byType] = await Promise.all([
+    const [monthly, byType, topDestinations] = await Promise.all([
       client.query(`
-        SELECT DATE_TRUNC('month', created_at)::date as month, COUNT(*) as count, SUM(total_price) as revenue
+        SELECT DATE_TRUNC('month', created_at)::date as month, 
+               COUNT(*) as count, 
+               SUM(total_price) as revenue
         FROM bookings
+        WHERE status != 'cancelled'
         GROUP BY DATE_TRUNC('month', created_at)
-        ORDER BY month DESC
+        ORDER BY month ASC
         LIMIT 12
       `),
       client.query(`
-        SELECT booking_type, COUNT(*) as count, AVG(total_price) as avg_price
+        SELECT booking_type, 
+               COUNT(*) as count, 
+               AVG(total_price) as avg_price,
+               SUM(total_price) as total_revenue
         FROM bookings
+        WHERE status != 'cancelled'
         GROUP BY booking_type
+      `),
+      client.query(`
+        SELECT destination as name, 
+               COUNT(*) as count, 
+               SUM(budget) as revenue
+        FROM trips
+        WHERE status != 'cancelled'
+        GROUP BY destination
+        ORDER BY count DESC
+        LIMIT 5
       `),
     ]);
 
     res.json({
       success: true,
       data: {
-        monthlyBookings: monthly.rows,
-        bookingsByType: byType.rows,
+        monthlyBookings: monthly.rows.map(row => ({
+          month: new Date(row.month).toLocaleString('default', { month: 'short' }),
+          bookings: parseInt(row.count),
+          revenue: parseFloat(row.revenue || 0)
+        })),
+        bookingsByType: byType.rows.map(row => ({
+          type: row.booking_type,
+          count: parseInt(row.count),
+          avg_price: parseFloat(row.avg_price || 0),
+          revenue: parseFloat(row.total_revenue || 0)
+        })),
+        topDestinations: topDestinations.rows.map(row => ({
+          name: row.name,
+          bookings: parseInt(row.count),
+          revenue: parseFloat(row.revenue || 0)
+        }))
       },
     });
   } finally {
@@ -506,8 +565,11 @@ export async function updateSettings(req, res) {
   const { key, value } = req.body;
   const client = await pool.connect();
   try {
-    await client.query('INSERT INTO admin_logs (admin_id, action, details) VALUES ($1, $2, $3)',
-      [req.user.id, 'UPDATE_SETTINGS', `Updated setting ${key}`]);
+    await logAdminAction(req, 'UPDATE_SETTINGS', {
+      resourceType: 'settings',
+      resourceId: key,
+      details: `Updated setting ${key}`
+    });
     res.json({ success: true, message: 'Settings updated', data: { key, value } });
   } finally {
     client.release();
@@ -541,8 +603,11 @@ export async function updateListing(req, res) {
     );
     if (result.rows.length === 0) throw new NotFoundError('Listing not found');
 
-    await client.query('INSERT INTO admin_logs (admin_id, action, details) VALUES ($1, $2, $3)',
-      [req.user.id, 'UPDATE_LISTING', `Updated listing ${id} to ${status}`]);
+    await logAdminAction(req, 'UPDATE_LISTING', {
+      resourceType: 'provider',
+      resourceId: id,
+      details: `Updated listing ${id} to ${status}`
+    });
 
     res.json({ success: true, message: 'Listing updated', data: result.rows[0] });
   } finally {
@@ -616,8 +681,11 @@ export async function updateTrip(req, res) {
     );
     if (result.rows.length === 0) throw new NotFoundError('Trip not found');
 
-    await client.query('INSERT INTO admin_logs (admin_id, action, details) VALUES ($1, $2, $3)',
-      [req.user.id, 'UPDATE_TRIP', `Updated trip ${id}`]);
+    await logAdminAction(req, 'UPDATE_TRIP', {
+      resourceType: 'trip',
+      resourceId: id,
+      details: `Updated trip ${id}`
+    });
 
     res.json({ success: true, message: 'Trip updated', data: result.rows[0] });
   } finally {
@@ -634,8 +702,11 @@ export async function deleteTrip(req, res) {
     const result = await client.query('DELETE FROM trips WHERE id = $1', [id]);
     if (result.rowCount === 0) throw new NotFoundError('Trip not found');
 
-    await client.query('INSERT INTO admin_logs (admin_id, action, details) VALUES ($1, $2, $3)',
-      [req.user.id, 'DELETE_TRIP', `Deleted trip ${id}`]);
+    await logAdminAction(req, 'DELETE_TRIP', {
+      resourceType: 'trip',
+      resourceId: id,
+      details: `Deleted trip ${id}`
+    });
 
     res.json({ success: true, message: 'Trip deleted' });
   } finally {
@@ -670,8 +741,11 @@ export async function createDestination(req, res) {
       [name, region, category_id || null, description, image_url, entrance_fee, opening_hours, location_data || {}, tags || [], status || 'published']
     );
 
-    await client.query('INSERT INTO admin_logs (admin_id, action, details) VALUES ($1, $2, $3)',
-      [req.user.id, 'CREATE_DESTINATION', `Created destination ${name}`]);
+    await logAdminAction(req, 'CREATE_DESTINATION', {
+      resourceType: 'destination',
+      resourceId: result.rows[0].id,
+      details: `Created destination ${name}`
+    });
 
     res.status(201).json({ success: true, data: result.rows[0] });
   } finally {
@@ -699,8 +773,11 @@ export async function updateDestination(req, res) {
       params
     );
 
-    await client.query('INSERT INTO admin_logs (admin_id, action, details) VALUES ($1, $2, $3)',
-      [req.user.id, 'UPDATE_DESTINATION', `Updated destination ${id}`]);
+    await logAdminAction(req, 'UPDATE_DESTINATION', {
+      resourceType: 'destination',
+      resourceId: id,
+      details: `Updated destination ${id}`
+    });
 
     res.json({ success: true, data: result.rows[0] });
   } finally {
@@ -714,8 +791,11 @@ export async function deleteDestination(req, res) {
   try {
     await client.query('DELETE FROM destinations WHERE id = $1', [id]);
 
-    await client.query('INSERT INTO admin_logs (admin_id, action, details) VALUES ($1, $2, $3)',
-      [req.user.id, 'DELETE_DESTINATION', `Deleted destination ${id}`]);
+    await logAdminAction(req, 'DELETE_DESTINATION', {
+      resourceType: 'destination',
+      resourceId: id,
+      details: `Deleted destination ${id}`
+    });
 
     res.json({ success: true, message: 'Destination deleted' });
   } finally {
@@ -749,6 +829,13 @@ export async function createAttraction(req, res) {
        RETURNING *`,
       [destination_id, name, category, description, image_url, entrance_fee, opening_hours, location_data || {}, status || 'published']
     );
+
+    await logAdminAction(req, 'CREATE_ATTRACTION', {
+      resourceType: 'attraction',
+      resourceId: result.rows[0].id,
+      details: `Created attraction ${name}`
+    });
+
     res.status(201).json({ success: true, data: result.rows[0] });
   } finally {
     client.release();
@@ -774,6 +861,13 @@ export async function updateAttraction(req, res) {
       `UPDATE attractions SET ${setClause}, updated_at = CURRENT_TIMESTAMP WHERE id = $${params.length} RETURNING *`,
       params
     );
+
+    await logAdminAction(req, 'UPDATE_ATTRACTION', {
+      resourceType: 'attraction',
+      resourceId: id,
+      details: `Updated attraction ${id}`
+    });
+
     res.json({ success: true, data: result.rows[0] });
   } finally {
     client.release();
@@ -785,6 +879,13 @@ export async function deleteAttraction(req, res) {
   const client = await pool.connect();
   try {
     await client.query('DELETE FROM attractions WHERE id = $1', [id]);
+
+    await logAdminAction(req, 'DELETE_ATTRACTION', {
+      resourceType: 'attraction',
+      resourceId: id,
+      details: `Deleted attraction ${id}`
+    });
+
     res.json({ success: true, message: 'Attraction deleted' });
   } finally {
     client.release();
@@ -817,6 +918,12 @@ export async function createSuggestedItinerary(req, res) {
        RETURNING *`,
       [destination_id, title, description, duration_days, image_url, items || []]
     );
+    await logAdminAction(req, 'CREATE_SUGGESTED_ITINERARY', {
+      resourceType: 'suggested_itinerary',
+      resourceId: result.rows[0].id,
+      details: `Created suggested itinerary: ${title}`
+    });
+
     res.status(201).json({ success: true, data: result.rows[0] });
   } finally {
     client.release();
@@ -837,6 +944,12 @@ export async function updateSuggestedItinerary(req, res) {
       `UPDATE suggested_itineraries SET ${setClause}, updated_at = CURRENT_TIMESTAMP WHERE id = $${params.length} RETURNING *`,
       params
     );
+    await logAdminAction(req, 'UPDATE_SUGGESTED_ITINERARY', {
+      resourceType: 'suggested_itinerary',
+      resourceId: id,
+      details: `Updated suggested itinerary ${id}`
+    });
+
     res.json({ success: true, data: result.rows[0] });
   } finally {
     client.release();
@@ -848,6 +961,13 @@ export async function deleteSuggestedItinerary(req, res) {
   const client = await pool.connect();
   try {
     await client.query('DELETE FROM suggested_itineraries WHERE id = $1', [id]);
+    
+    await logAdminAction(req, 'DELETE_SUGGESTED_ITINERARY', {
+      resourceType: 'suggested_itinerary',
+      resourceId: id,
+      details: `Deleted suggested itinerary ${id}`
+    });
+
     res.json({ success: true, message: 'Suggested itinerary deleted' });
   } finally {
     client.release();
@@ -873,6 +993,12 @@ export async function createCategory(req, res) {
       'INSERT INTO trip_categories (name, description, icon) VALUES ($1, $2, $3) RETURNING *',
       [name, description, icon]
     );
+    await logAdminAction(req, 'CREATE_CATEGORY', {
+      resourceType: 'trip_category',
+      resourceId: result.rows[0].id,
+      details: `Created trip category: ${name}`
+    });
+
     res.status(201).json({ success: true, data: result.rows[0] });
   } finally {
     client.release();
@@ -888,6 +1014,12 @@ export async function updateCategory(req, res) {
       'UPDATE trip_categories SET name = $1, description = $2, icon = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4 RETURNING *',
       [name, description, icon, id]
     );
+    await logAdminAction(req, 'UPDATE_CATEGORY', {
+      resourceType: 'trip_category',
+      resourceId: id,
+      details: `Updated trip category ${id}`
+    });
+
     res.json({ success: true, data: result.rows[0] });
   } finally {
     client.release();
@@ -899,6 +1031,13 @@ export async function deleteCategory(req, res) {
   const client = await pool.connect();
   try {
     await client.query('DELETE FROM trip_categories WHERE id = $1', [id]);
+
+    await logAdminAction(req, 'DELETE_CATEGORY', {
+      resourceType: 'trip_category',
+      resourceId: id,
+      details: `Deleted trip category ${id}`
+    });
+
     res.json({ success: true, message: 'Category deleted' });
   } finally {
     client.release();
@@ -924,6 +1063,12 @@ export async function createTravelInfo(req, res) {
       'INSERT INTO travel_info (title, category, content, icon, is_featured) VALUES ($1, $2, $3, $4, $5) RETURNING *',
       [title, category, content, icon, is_featured || false]
     );
+    await logAdminAction(req, 'CREATE_TRAVEL_INFO', {
+      resourceType: 'travel_info',
+      resourceId: result.rows[0].id,
+      details: `Created travel information: ${title}`
+    });
+
     res.status(201).json({ success: true, data: result.rows[0] });
   } finally {
     client.release();
@@ -944,6 +1089,12 @@ export async function updateTravelInfo(req, res) {
       `UPDATE travel_info SET ${setClause}, updated_at = CURRENT_TIMESTAMP WHERE id = $${params.length} RETURNING *`,
       params
     );
+    await logAdminAction(req, 'UPDATE_TRAVEL_INFO', {
+      resourceType: 'travel_info',
+      resourceId: id,
+      details: `Updated travel information ${id}`
+    });
+
     res.json({ success: true, data: result.rows[0] });
   } finally {
     client.release();
@@ -955,6 +1106,13 @@ export async function deleteTravelInfo(req, res) {
   const client = await pool.connect();
   try {
     await client.query('DELETE FROM travel_info WHERE id = $1', [id]);
+
+    await logAdminAction(req, 'DELETE_TRAVEL_INFO', {
+      resourceType: 'travel_info',
+      resourceId: id,
+      details: `Deleted travel information ${id}`
+    });
+
     res.json({ success: true, message: 'Travel info deleted' });
   } finally {
     client.release();

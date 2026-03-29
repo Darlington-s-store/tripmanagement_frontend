@@ -1,6 +1,6 @@
 import { ReactNode, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { MapPin, Menu, X, Home, Calendar, BookOpen, User, Settings, LogOut, Star, Building, Users, BarChart3, Shield, CheckCircle, MessageSquare, Bell, Search, Landmark, LayoutGrid, FileText, Hotel, Plane, Info } from "lucide-react";
+import { MapPin, Menu, X, Home, Calendar, BookOpen, User, Settings, LogOut, Star, Building, Users, BarChart3, Shield, CheckCircle, MessageSquare, Bell, Search, Landmark, LayoutGrid, FileText, Hotel, Plane, Info, RefreshCcw, Gavel, ClipboardCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -40,6 +40,9 @@ const sidebarLinks = {
     { label: "Listings", href: "/admin/listings", icon: Building },
     { label: "Bookings", href: "/admin/bookings", icon: Calendar },
     { label: "Reviews", href: "/admin/reviews", icon: Star },
+    { label: "Approvals", href: "/admin/approvals", icon: ClipboardCheck },
+    { label: "Refunds", href: "/admin/refunds", icon: RefreshCcw },
+    { label: "Disputes", href: "/admin/disputes", icon: Gavel },
     { label: "Analytics", href: "/admin/analytics", icon: BarChart3 },
     { label: "Settings", href: "/admin/settings", icon: Settings },
   ],

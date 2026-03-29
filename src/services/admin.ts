@@ -87,6 +87,7 @@ export interface Dispute {
 export interface AnalyticsStats {
     monthlyBookings: any[];
     bookingsByType: any[];
+    topDestinations: any[];
 }
 
 export interface AdminTrip {
@@ -321,25 +322,26 @@ export interface Destination {
     region: string;
     category_id: string;
     category_name?: string;
+    category: string;
     description: string;
     full_description?: string;
     image_url: string;
     gallery?: string[];
-    travel_tips?: string[];
+    travel_tips?: string | string[];
     activities?: string[];
     best_time?: string;
     entrance_fee: string;
     opening_hours: string;
-    rating: number;
-    reviews_count: number;
+    location_map: string;
+    status: "active" | "inactive" | "archived";
+    rating?: number;
+    reviews_count?: number;
     location_data?: {
         lat: number;
         lng: number;
     };
-    location_map?: string;
-    status: string;
     tags?: string[];
-    created_at: string;
+    created_at?: string;
 }
 
 export interface Attraction {
