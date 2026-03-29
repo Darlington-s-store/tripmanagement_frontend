@@ -8,7 +8,6 @@ export interface Review {
   title?: string;
   comment?: string;
   created_at: string;
-  status: string;
   booking_type?: string;
   reference_id?: string;
 }
@@ -45,5 +44,10 @@ export const reviewsService = {
 
   async deleteReview(id: string): Promise<void> {
     await apiClient.delete(`/reviews/${id}`);
+  },
+
+  async getServiceReviews(serviceId: string, serviceType: string): Promise<Review[]> {
+    const response = await apiClient.get<Review[]>(`/reviews/service/${serviceType}/${serviceId}`);
+    return response.data || [];
   },
 };

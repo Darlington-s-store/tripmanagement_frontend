@@ -145,11 +145,6 @@ export const adminService = {
         await apiClient.delete(`/admin/reviews/${id}`);
     },
 
-    async updateReviewStatus(id: string, status: string): Promise<Review> {
-        const response = await apiClient.put<Review>(`/admin/reviews/${id}/status`, { status });
-        return response.data!;
-    },
-
     async getAllBookings(): Promise<Booking[]> {
         const response = await apiClient.get<Booking[]>('/admin/bookings');
         return response.data || [];
@@ -327,15 +322,23 @@ export interface Destination {
     category_id: string;
     category_name?: string;
     description: string;
+    full_description?: string;
     image_url: string;
+    gallery?: string[];
+    travel_tips?: string[];
+    activities?: string[];
+    best_time?: string;
     entrance_fee: string;
     opening_hours: string;
     rating: number;
     reviews_count: number;
-    location_data: any;
-    location_map: string;
+    location_data?: {
+        lat: number;
+        lng: number;
+    };
+    location_map?: string;
     status: string;
-    tags: string[];
+    tags?: string[];
     created_at: string;
 }
 
@@ -346,10 +349,15 @@ export interface Attraction {
     name: string;
     category: string;
     description: string;
+    full_description?: string;
     image_url: string;
+    gallery?: string[];
+    travel_tips?: string[];
+    activities?: string[];
+    best_time?: string;
     entrance_fee: string;
     opening_hours: string;
-    location_map: string;
+    location_map?: string;
     status: string;
 }
 
