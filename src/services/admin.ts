@@ -114,6 +114,11 @@ export const adminService = {
         return response.data || [];
     },
 
+    async getUserById(id: string): Promise<User> {
+        const response = await apiClient.get<User>(`/admin/users/${id}`);
+        return response.data!;
+    },
+
     async createUser(data: Partial<User> & { password?: string }): Promise<User> {
         const response = await apiClient.post<User>('/admin/users', data);
         return response.data!;

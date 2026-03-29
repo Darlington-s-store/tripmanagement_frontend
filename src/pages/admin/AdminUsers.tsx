@@ -257,15 +257,7 @@ const AdminUsers = () => {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-48 rounded-xl p-1 shadow-xl border-border">
                           <DropdownMenuItem className="gap-2 rounded-lg py-2" onClick={() => {
-                            setSelectedUser(u);
-                            setFormData({
-                              email: u.email,
-                              password: "",
-                              fullName: u.full_name || "",
-                              phone: u.phone || "",
-                              role: u.role
-                            });
-                            setIsEditUserOpen(true);
+                            navigate(`/admin/users/${u.id}/edit`);
                           }}>
                             <Edit className="h-3.5 w-3.5" /> Edit Profile
                           </DropdownMenuItem>
