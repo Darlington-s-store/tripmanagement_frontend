@@ -49,13 +49,16 @@ class ApiClient {
   }
 
   async get<T>(endpoint: string, params?: Record<string, any>): Promise<ApiResponse<T>> {
-    const url = new URL(`${API_URL}${endpoint}`);
+    let url = `${API_URL}${endpoint}`;
     if (params) {
+      const qs = new URLSearchParams();
       Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          url.searchParams.append(key, String(value));
+        if (value !== undefined && value !== null && value !== 'all') {
+          qs.append(key, String(value));
         }
       });
+      const qsStr = qs.toString();
+      if (qsStr) url += `?${qsStr}`;
     }
 
     const options: RequestInit = {
@@ -63,9 +66,9 @@ class ApiClient {
       headers: await this.getHeaders(),
       credentials: 'include',
     };
-    const response = await fetch(url.toString(), options);
+    const response = await fetch(url, options);
 
-    return this.handleResponse<T>(response, { ...options, url: url.toString() });
+    return this.handleResponse<T>(response, { ...options, url });
   }
 
   async post<T>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
