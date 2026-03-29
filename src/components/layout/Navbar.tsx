@@ -1,13 +1,15 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, MapPin, User, ChevronDown } from "lucide-react";
+import { Menu, X, MapPin, User, LogOut, LayoutDashboard, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/context/AuthContext";
 
 const navLinks = [
   { label: "Destinations", href: "/destinations" },
@@ -15,76 +17,97 @@ const navLinks = [
   { label: "Attractions", href: "/attractions" },
   { label: "Tour Guides", href: "/guides" },
   { label: "Transport", href: "/transport" },
-  { label: "Plan Trip", href: "/trips/new" },
+  { label: "Plan a Trip", href: "/trips/new" },
 ];
 
 const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
+  const { user, logout } = useAuth();
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-lg">
+    <header className="sticky top-0 z-50 border-b border-border bg-white/90 backdrop-blur-lg shadow-sm">
       <div className="container flex h-16 items-center justify-between">
-        <Link to="/" className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
-            <MapPin className="h-5 w-5 text-primary-foreground" />
+
+        {/* Logo */}
+        <Link to="/" className="flex items-center gap-2.5 shrink-0">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary shadow-md shadow-primary/30">
+            <MapPin className="h-5 w-5 text-white" />
           </div>
-          <span className="font-display text-xl font-bold text-foreground">
-            Trip<span className="text-primary">Ease</span> Ghana
+          <span className="font-display text-xl font-bold text-gray-900">
+            Trip<span className="text-primary">Ease</span>
+            <span className="ml-1 text-sm font-medium text-gray-400">Ghana</span>
           </span>
         </Link>
 
-        {/* Desktop nav */}
-        <nav className="hidden items-center gap-1 md:flex">
+        {/* Desktop Nav */}
+        <nav className="hidden items-center gap-0.5 md:flex">
           {navLinks.map((link) => (
             <Link
               key={link.href}
               to={link.href}
-              className={`rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground ${location.pathname === link.href
-                ? "bg-accent text-primary"
-                : "text-muted-foreground"
-                }`}
+              className={`rounded-lg px-3.5 py-2 text-sm font-medium transition-colors ${
+                location.pathname === link.href
+                  ? "bg-primary/10 text-primary"
+                  : "text-gray-500 hover:text-gray-900 hover:bg-gray-100"
+              }`}
             >
               {link.label}
             </Link>
           ))}
         </nav>
 
+        {/* Desktop Auth Actions */}
         <div className="hidden items-center gap-2 md:flex">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="gap-1">
-                <User className="h-4 w-4" />
-                Account
-                <ChevronDown className="h-3 w-3" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem asChild>
+          {user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="gap-2 font-medium text-gray-700">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/15 text-primary text-xs font-bold">
+                    {user.full_name?.charAt(0).toUpperCase() || "U"}
+                  </div>
+                  {user.full_name?.split(" ")[0]}
+                  <ChevronDown className="h-3.5 w-3.5 text-gray-400" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem asChild>
+                  <Link to={user.role === "admin" ? "/admin" : "/dashboard"} className="flex items-center gap-2">
+                    <LayoutDashboard className="h-4 w-4" />
+                    My Dashboard
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/dashboard/settings" className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    Account Settings
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="flex items-center gap-2 text-red-500 focus:text-red-500"
+                  onClick={logout}
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sign Out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <>
+              <Button variant="ghost" size="sm" className="text-gray-600 font-medium" asChild>
                 <Link to="/login">Sign In</Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link to="/register">Create Account</Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link to="/dashboard">My Dashboard</Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link to="/provider/dashboard">Provider Dashboard</Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link to="/admin">Admin Panel</Link>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <Button asChild size="sm">
-            <Link to="/register">Get Started</Link>
-          </Button>
+              </Button>
+              <Button size="sm" className="bg-primary hover:bg-primary/90 shadow-sm font-semibold" asChild>
+                <Link to="/register">Get Started</Link>
+              </Button>
+            </>
+          )}
         </div>
 
         {/* Mobile toggle */}
         <button
-          className="md:hidden"
+          className="md:hidden rounded-md p-1.5 text-gray-600 hover:bg-gray-100 transition-colors"
           onClick={() => setMobileOpen(!mobileOpen)}
         >
           {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -93,28 +116,44 @@ const Navbar = () => {
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <div className="animate-fade-in border-t border-border bg-background p-4 md:hidden">
+        <div className="border-t border-gray-100 bg-white p-4 md:hidden shadow-lg">
           <nav className="flex flex-col gap-1">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
                 to={link.href}
                 onClick={() => setMobileOpen(false)}
-                className={`rounded-md px-3 py-2 text-sm font-medium ${location.pathname === link.href
-                  ? "bg-accent text-primary"
-                  : "text-muted-foreground"
-                  }`}
+                className={`rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                  location.pathname === link.href
+                    ? "bg-primary/10 text-primary"
+                    : "text-gray-600 hover:bg-gray-50"
+                }`}
               >
                 {link.label}
               </Link>
             ))}
-            <div className="mt-3 flex flex-col gap-2 border-t border-border pt-3">
-              <Button variant="outline" size="sm" asChild>
-                <Link to="/login" onClick={() => setMobileOpen(false)}>Sign In</Link>
-              </Button>
-              <Button size="sm" asChild>
-                <Link to="/register" onClick={() => setMobileOpen(false)}>Get Started</Link>
-              </Button>
+            <div className="mt-3 flex flex-col gap-2 border-t border-gray-100 pt-3">
+              {user ? (
+                <>
+                  <Button variant="outline" size="sm" asChild>
+                    <Link to={user.role === "admin" ? "/admin" : "/dashboard"} onClick={() => setMobileOpen(false)}>
+                      My Dashboard
+                    </Link>
+                  </Button>
+                  <Button variant="ghost" size="sm" className="text-red-500" onClick={() => { logout(); setMobileOpen(false); }}>
+                    Sign Out
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button variant="outline" size="sm" asChild>
+                    <Link to="/login" onClick={() => setMobileOpen(false)}>Sign In</Link>
+                  </Button>
+                  <Button size="sm" className="bg-primary" asChild>
+                    <Link to="/register" onClick={() => setMobileOpen(false)}>Get Started</Link>
+                  </Button>
+                </>
+              )}
             </div>
           </nav>
         </div>
