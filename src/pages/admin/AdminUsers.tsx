@@ -269,7 +269,7 @@ const AdminUsers = () => {
                             <Key className="h-3.5 w-3.5" /> Reset Password
                           </DropdownMenuItem>
 
-                          <DropdownMenuItem className="gap-2 rounded-lg py-2" onClick={() => handleViewActivity(u)}>
+                          <DropdownMenuItem className="gap-2 rounded-lg py-2" onClick={() => navigate(`/admin/users/${u.id}/activity`)}>
                             <Eye className="h-3.5 w-3.5" /> View Activity
                           </DropdownMenuItem>
 
