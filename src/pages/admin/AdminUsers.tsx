@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Users, Search, MoreVertical, Shield, Ban, Eye, CheckCircle2, UserPlus, Key, Trash2, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +15,7 @@ import { adminService, User } from "@/services/admin";
 import { toast } from "sonner";
 
 const AdminUsers = () => {
+  const navigate = useNavigate();
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -146,52 +148,12 @@ const AdminUsers = () => {
             <p className="text-sm text-muted-foreground text-opacity-70">Manage all registered users, roles, and platform access.</p>
           </div>
           <div className="flex items-center gap-3">
-            <Dialog open={isAddUserOpen} onOpenChange={setIsAddUserOpen}>
-              <DialogTrigger asChild>
-                <Button className="gap-2 bg-primary hover:bg-primary/90 rounded-xl">
-                  <UserPlus className="h-4 w-4" /> Add New User
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                  <DialogTitle>Add New User</DialogTitle>
-                  <DialogDescription>Create a new user account with specific roles and permissions.</DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="name">Full Name</Label>
-                    <Input id="name" value={formData.fullName} onChange={(e) => setFormData({ ...formData, fullName: e.target.value })} />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input id="email" type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="password">Initial Password</Label>
-                    <Input id="password" type="password" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="phone">Phone (Optional)</Label>
-                    <Input id="phone" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="role">Role</Label>
-                    <Select value={formData.role} onValueChange={(v) => setFormData({ ...formData, role: v })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="user">Traveller</SelectItem>
-                        <SelectItem value="provider">Provider</SelectItem>
-                        <SelectItem value="admin">Admin</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsAddUserOpen(false)}>Cancel</Button>
-                  <Button onClick={handleCreateUser}>Create User</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+            <Button
+              className="gap-2 bg-primary hover:bg-primary/90 rounded-xl"
+              onClick={() => navigate("/admin/users/new")}
+            >
+              <UserPlus className="h-4 w-4" /> Add New User
+            </Button>
             <Badge variant="secondary" className="px-3 py-1 bg-accent/30">{users.length} Total Users</Badge>
           </div>
         </div>

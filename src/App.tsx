@@ -27,6 +27,7 @@ import ProviderReviews from "./pages/provider/ProviderReviews";
 import ProviderProfile from "./pages/provider/ProviderProfile";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUsers from "./pages/admin/AdminUsers";
+import AdminCreateUser from "./pages/admin/AdminCreateUser";
 import AdminDestinations from "./pages/admin/AdminDestinations";
 import AdminAttractions from "./pages/admin/AdminAttractions";
 import AdminCategories from "./pages/admin/AdminCategories";
@@ -115,6 +116,7 @@ const App = () => (
             {/* Admin Dashboard */}
             <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>} />
             <Route path="/admin/users" element={<ProtectedRoute allowedRoles={['admin']}><AdminUsers /></ProtectedRoute>} />
+            <Route path="/admin/users/new" element={<ProtectedRoute allowedRoles={['admin']}><AdminCreateUser /></ProtectedRoute>} />
             <Route path="/admin/destinations" element={<ProtectedRoute allowedRoles={['admin']}><AdminDestinations /></ProtectedRoute>} />
             <Route path="/admin/hotels" element={<ProtectedRoute allowedRoles={['admin']}><AdminHotels /></ProtectedRoute>} />
             <Route path="/admin/attractions" element={<ProtectedRoute allowedRoles={['admin']}><AdminAttractions /></ProtectedRoute>} />
