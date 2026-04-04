@@ -8,17 +8,21 @@ export function sanitizeOutput(data, sensitiveFields = ['password_hash', 'refres
     if (!data) return data;
 
     const sanitize = (obj) => {
-        if (typeof obj !== 'object' || obj === null) return obj;
+        if (obj === null || obj === undefined) return obj;
+        // pg returns DATE/TIMESTAMP as Date; spreading a Date yields {} and corrupts JSON output
+        if (obj instanceof Date) return obj;
+        if (Array.isArray(obj)) return obj.map((item) => sanitize(item));
+        if (typeof obj !== 'object') return obj;
 
         const newObj = { ...obj };
         sensitiveFields.forEach(field => {
             delete newObj[field];
         });
 
-        // Recursively sanitize check
         Object.keys(newObj).forEach(key => {
-            if (typeof newObj[key] === 'object') {
-                newObj[key] = sanitize(newObj[key]);
+            const value = newObj[key];
+            if (value !== null && typeof value === 'object') {
+                newObj[key] = sanitize(value);
             }
         });
 
