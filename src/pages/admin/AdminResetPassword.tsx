@@ -90,7 +90,7 @@ export default function AdminResetPassword() {
         setIsLoading(false);
       }
     })();
-  }, [id]);
+  }, [id, navigate]);
 
   /* Generate a secure random password */
   const generate = () => {
@@ -129,7 +129,8 @@ export default function AdminResetPassword() {
       toast.success(`Password reset for ${user?.full_name}. Share it securely.`);
       navigate("/admin/users");
     } catch (err: unknown) {
-      toast.error(err.message || "Password reset failed.");
+      const error = err as Error;
+      toast.error(error.message || "Password reset failed.");
     } finally {
       setIsSaving(false);
     }
