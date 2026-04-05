@@ -36,7 +36,7 @@ export default function AdminLogin() {
       }
       toast.success("Admin login successful!");
       navigate("/admin");
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(error.message || "Login failed");
     } finally {
       setIsSubmitting(false);
@@ -50,7 +50,7 @@ export default function AdminLogin() {
       await verifyMFA(mfaEmail, mfaCode);
       toast.success("Admin verified successfully!");
       navigate("/admin");
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(error.message || "Invalid security code");
     } finally {
       setIsSubmitting(false);

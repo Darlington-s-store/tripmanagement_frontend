@@ -25,7 +25,7 @@ const TourGuides = () => {
     try {
       const data = await guidesService.searchGuides({ limit: 100 });
       setGuides(data);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error("Failed to load guides");
       console.error(error);
     } finally {

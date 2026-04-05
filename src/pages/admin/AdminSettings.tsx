@@ -16,7 +16,8 @@ const AdminSettings = () => {
     try {
       await toggleMFA(checked);
       toast.success(`Multi-Factor Authentication ${checked ? "enabled" : "disabled"}`);
-    } catch (error: any) {
+    } catch (err) {
+      const error = err as Error;
       console.error("Failed to toggle MFA:", error);
       toast.error(error.message || "Failed to toggle MFA");
     } finally {

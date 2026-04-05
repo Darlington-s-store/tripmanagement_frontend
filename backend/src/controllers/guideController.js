@@ -1,6 +1,6 @@
 import pool from '../config/database.js';
 import { NotFoundError } from '../utils/errors.js';
-import { v4 as uuidv4 } from 'uuid';
+import { logAdminAction } from '../utils/logger.js';
 
 export async function getAllGuides(req, res) {
   const { language, minPrice, maxPrice, limit = 20, offset = 0 } = req.query;
@@ -49,10 +49,10 @@ export async function createGuide(req, res) {
   const client = await pool.connect();
   try {
     const result = await client.query(
-      `INSERT INTO tour_guides (id, name, experience_years, languages, hourly_rate, bio, availability, image_url) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
+      `INSERT INTO tour_guides (name, experience_years, languages, hourly_rate, bio, availability, image_url) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7) 
        RETURNING id, name, experience_years, languages, hourly_rate, rating`,
-      [uuidv4(), name, experienceYears || 0, languages, hourlyRate, bio, availability, imageUrl]
+      [name, experienceYears || 0, languages, hourlyRate, bio, availability, imageUrl]
     );
     res.status(201).json({ success: true, data: result.rows[0] });
   } finally {

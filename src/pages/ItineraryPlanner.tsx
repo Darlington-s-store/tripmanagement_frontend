@@ -15,14 +15,7 @@ interface ItineraryItem {
   time: string;
 }
 
-const initialItems: ItineraryItem[] = [
-  { id: "1", day: 1, type: "hotel", name: "Labadi Beach Hotel, Accra", cost: 450, time: "3:00 PM" },
-  { id: "2", day: 1, type: "attraction", name: "Kwame Nkrumah Memorial", cost: 20, time: "10:00 AM" },
-  { id: "3", day: 2, type: "transport", name: "Bus: Accra → Cape Coast", cost: 80, time: "7:00 AM" },
-  { id: "4", day: 2, type: "attraction", name: "Cape Coast Castle", cost: 40, time: "11:00 AM" },
-  { id: "5", day: 2, type: "attraction", name: "Kakum National Park", cost: 60, time: "2:00 PM" },
-  { id: "6", day: 3, type: "hotel", name: "Coconut Grove Beach Resort", cost: 280, time: "Check-in" },
-];
+const initialItems: ItineraryItem[] = [];
 
 const typeColors = {
   hotel: "bg-info/10 text-info",
@@ -34,7 +27,7 @@ const typeIcons = { hotel: Hotel, attraction: MapPin, transport: Truck };
 
 const ItineraryPlanner = () => {
   const [items, setItems] = useState(initialItems);
-  const [tripName, setTripName] = useState("My Ghana Adventure");
+  const [tripName, setTripName] = useState("Untitled Trip");
 
   const days = [...new Set(items.map((i) => i.day))].sort();
   const totalCost = items.reduce((sum, i) => sum + i.cost, 0);

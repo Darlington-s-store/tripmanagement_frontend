@@ -7,5 +7,6 @@ export async function hashPassword(password) {
 }
 
 export async function comparePassword(password, hash) {
+  if (!hash) return false; // User has no password (e.g., Google-auth only)
   return bcryptjs.compare(password, hash);
 }

@@ -46,7 +46,7 @@ const Login = () => {
           navigate("/dashboard");
         }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(error.message || "Login failed");
     }
   };
@@ -61,7 +61,7 @@ const Login = () => {
       } else {
         navigate("/dashboard");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(error.message || "Invalid verification code");
     }
   };

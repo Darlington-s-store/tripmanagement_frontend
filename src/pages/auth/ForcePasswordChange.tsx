@@ -35,7 +35,7 @@ const ForcePasswordChange = () => {
             await authService.changePassword(formData.currentPassword, formData.newPassword);
             toast.success("Password changed successfully! You can now access your account.");
             navigate("/dashboard");
-        } catch (error: any) {
+        } catch (error: unknown) {
             toast.error(error.message || "Failed to change password. Please check your current password.");
         } finally {
             setIsLoading(false);

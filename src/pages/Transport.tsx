@@ -1,53 +1,69 @@
-import { useState } from "react";
-import { MapPin, Clock, Search, Bus, Plane, ArrowRight } from "lucide-react";
+import { useState, useEffect } from "react";
+import { 
+  MapPin, Search, Bus, Plane, ArrowRight, Loader2, 
+  Clock, Shield, CreditCard, Info, Ticket, Calendar,
+  Navigation, CheckCircle2, AlertCircle, Sparkles
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent } from "@/components/ui/card";
 import Layout from "@/components/layout/Layout";
 import { toast } from "sonner";
-
-const busRoutes = [
-  { id: "b1111111-1111-1111-1111-111111111111", operator: "VIP Jeoun", from: "Accra", to: "Kumasi", departure: "6:00 AM", arrival: "11:00 AM", price: 120, seats: 12, type: "VIP" },
-  { id: "b2222222-2222-2222-2222-222222222222", operator: "STC", from: "Accra", to: "Cape Coast", departure: "7:30 AM", arrival: "10:00 AM", price: 80, seats: 20, type: "Standard" },
-  { id: "b3333333-3333-3333-3333-333333333333", operator: "OA Travel", from: "Accra", to: "Tamale", departure: "5:00 PM", arrival: "5:00 AM", price: 200, seats: 8, type: "VIP" },
-  { id: "b4444444-4444-4444-4444-444444444444", operator: "Metro Mass", from: "Kumasi", to: "Takoradi", departure: "8:00 AM", arrival: "1:00 PM", price: 90, seats: 30, type: "Standard" },
-];
-
-const flights = [
-  { id: "f1111111-1111-1111-1111-111111111111", airline: "Africa World Airlines", from: "Accra", to: "Tamale", departure: "8:00 AM", arrival: "9:15 AM", price: 650, seats: 5 },
-  { id: "f2222222-2222-2222-2222-222222222222", airline: "PassionAir", from: "Accra", to: "Kumasi", departure: "10:30 AM", arrival: "11:20 AM", price: 500, seats: 12 },
-  { id: "f3333333-3333-3333-3333-333333333333", airline: "Africa World Airlines", from: "Accra", to: "Takoradi", departure: "2:00 PM", arrival: "2:50 PM", price: 550, seats: 8 },
-];
+import { transportService, TransportService as ITransport } from "@/services/transport";
+import { cn } from "@/lib/utils";
 
 const Transport = () => {
   const navigate = useNavigate();
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [fromSearch, setFromSearch] = useState("");
   const [toSearch, setToSearch] = useState("");
+  const [allTransport, setAllTransport] = useState<ITransport[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const filteredBuses = busRoutes.filter(r =>
-    r.from.toLowerCase().includes(fromSearch.toLowerCase()) &&
-    r.to.toLowerCase().includes(toSearch.toLowerCase())
+  useEffect(() => {
+    loadTransport();
+  }, []);
+
+  const loadTransport = async () => {
+    try {
+      setIsLoading(true);
+      const data = await transportService.getTransportServices();
+      setAllTransport(data);
+    } catch (error) {
+      console.error("Failed to load transport services:", error);
+      toast.error("Failed to load transport options");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const filteredBuses = allTransport.filter(r =>
+    r.type === 'bus' &&
+    (r.from_location.toLowerCase().includes(fromSearch.toLowerCase()) || fromSearch === "") &&
+    (r.to_location.toLowerCase().includes(toSearch.toLowerCase()) || toSearch === "")
   );
 
-  const filteredFlights = flights.filter(f =>
-    f.from.toLowerCase().includes(fromSearch.toLowerCase()) &&
-    f.to.toLowerCase().includes(toSearch.toLowerCase())
+  const filteredFlights = allTransport.filter(f =>
+    f.type === 'flight' &&
+    (f.from_location.toLowerCase().includes(fromSearch.toLowerCase()) || fromSearch === "") &&
+    (f.to_location.toLowerCase().includes(toSearch.toLowerCase()) || toSearch === "")
   );
 
-  const handleBookTransport = (item: any, isFlight: boolean) => {
+  const handleBookTransport = (item: ITransport) => {
+    const isFlight = item.type === 'flight';
     const bookingData = {
       type: "transport",
       id: item.id,
-      name: isFlight ? `${item.airline}: ${item.from} to ${item.to}` : `${item.operator}: ${item.from} to ${item.to}`,
+      name: `${item.operator}: ${item.from_location} to ${item.to_location}`,
       date: date,
-      time: item.departure,
+      time: item.departure_time || "N/A",
       guests: 1,
-      image: isFlight
+      image: item.image_url || (isFlight
         ? "https://images.unsplash.com/photo-1436491865332-7a61a109c05c?auto=format&fit=crop&q=80&w=800"
-        : "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&q=80&w=800",
+        : "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&q=80&w=800"),
       price: item.price,
       totalPrice: item.price
     };
@@ -57,133 +73,284 @@ const Transport = () => {
 
   return (
     <Layout>
-      <section className="bg-gradient-primary py-16">
-        <div className="container">
-          <h1 className="mb-2 font-display text-3xl font-bold text-primary-foreground md:text-4xl">
-            Transport & Flights
+      {/* ── HERO SECTION ── */}
+      <section className="relative min-h-[50vh] flex items-center justify-center overflow-hidden pt-20 pb-32">
+        <div className="absolute inset-0 z-0">
+          <img 
+            src="https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&q=80&w=2000" 
+            alt="Transport in Ghana"
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gray-950/70 backdrop-blur-[2px]" />
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
+        </div>
+
+        <div className="container relative z-10 text-center">
+          <Badge className="mb-6 bg-primary/20 text-primary border-primary/30 px-4 py-1.5 text-sm font-black uppercase tracking-[0.2em] backdrop-blur-md animate-fade-in">
+            Seamless Connections
+          </Badge>
+          <h1 className="mb-6 font-display text-5xl font-black text-white md:text-7xl leading-tight tracking-tight animate-slide-up">
+            Travel Ghana with <br />
+            <span className="text-primary italic">Absolute Confidence.</span>
           </h1>
-          <p className="mb-8 text-primary-foreground/80">
-            Book buses and domestic flights for seamless travel across Ghana
+          <p className="max-w-2xl mx-auto mb-12 text-lg text-gray-300 font-medium leading-relaxed animate-slide-up animation-delay-200">
+            From luxury intercity coaches to quick domestic flights. 
+            Skip the queues and book your seat in seconds.
           </p>
-          <div className="flex flex-col gap-2 rounded-2xl bg-background p-3 shadow-primary-lg sm:flex-row">
-            <div className="flex flex-1 items-center gap-2 rounded-xl bg-muted px-3">
-              <MapPin className="h-4 w-4 text-primary" />
-              <Input
-                placeholder="From"
-                className="border-0 bg-transparent shadow-none focus-visible:ring-0"
-                value={fromSearch}
-                onChange={(e) => setFromSearch(e.target.value)}
-              />
+
+          {/* New floating search box */}
+          <div className="max-w-5xl mx-auto bg-white p-2 sm:p-3 rounded-[2.5rem] shadow-2xl border border-white/10 backdrop-blur-xl animate-slide-up animation-delay-400">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
+              <div className="flex items-center gap-3 px-6 py-4 bg-gray-50 rounded-[1.75rem] border border-gray-100 group focus-within:ring-2 ring-primary/20 transition-all">
+                <Navigation className="h-5 w-5 text-primary" />
+                <div className="flex flex-col items-start w-full">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Departure</span>
+                  <input
+                    placeholder="Where from?"
+                    className="w-full bg-transparent border-0 p-0 text-gray-900 placeholder:text-gray-400 focus:ring-0 font-bold"
+                    value={fromSearch}
+                    onChange={(e) => setFromSearch(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 px-6 py-4 bg-gray-50 rounded-[1.75rem] border border-gray-100 group focus-within:ring-2 ring-primary/20 transition-all">
+                <MapPin className="h-5 w-5 text-primary" />
+                <div className="flex flex-col items-start w-full">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Destination</span>
+                  <input
+                    placeholder="Where to?"
+                    className="w-full bg-transparent border-0 p-0 text-gray-900 placeholder:text-gray-400 focus:ring-0 font-bold"
+                    value={toSearch}
+                    onChange={(e) => setToSearch(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 px-6 py-4 bg-gray-50 rounded-[1.75rem] border border-gray-100 group focus-within:ring-2 ring-primary/20 transition-all">
+                <Calendar className="h-5 w-5 text-primary" />
+                <div className="flex flex-col items-start w-full">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Travel Date</span>
+                  <input
+                    type="date"
+                    className="w-full bg-transparent border-0 p-0 text-gray-900 focus:ring-0 font-bold"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    min={new Date().toISOString().split('T')[0]}
+                    required
+                  />
+                </div>
+              </div>
+
+              <Button size="lg" className="h-auto rounded-[1.75rem] bg-primary font-black text-white px-8 gap-3 shadow-xl shadow-primary/30 hover:scale-[1.02] active:scale-[0.98] transition-all">
+                <Search className="h-5 w-5" /> CHECK AVAILABILITY
+              </Button>
             </div>
-            <div className="flex flex-1 items-center gap-2 rounded-xl bg-muted px-3">
-              <MapPin className="h-4 w-4 text-primary" />
-              <Input
-                placeholder="To"
-                className="border-0 bg-transparent shadow-none focus-visible:ring-0"
-                value={toSearch}
-                onChange={(e) => setToSearch(e.target.value)}
-              />
-            </div>
-            <Input
-              type="date"
-              className="flex-1 rounded-xl"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-            />
-            <Button size="lg" className="gap-2 rounded-xl">
-              <Search className="h-4 w-4" /> Search
-            </Button>
           </div>
         </div>
       </section>
 
-      <section className="py-10">
+      {/* ── RESULTS SECTION ── */}
+      <section className="-mt-16 pb-24 relative z-20">
         <div className="container">
-          <Tabs defaultValue="buses">
-            <TabsList className="mb-6">
-              <TabsTrigger value="buses" className="gap-2"><Bus className="h-4 w-4" /> Buses</TabsTrigger>
-              <TabsTrigger value="flights" className="gap-2"><Plane className="h-4 w-4" /> Flights</TabsTrigger>
-            </TabsList>
+          <Tabs defaultValue="buses" className="w-full">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-12">
+              <TabsList className="bg-white/80 backdrop-blur-md p-1.5 rounded-2xl border border-gray-100 shadow-xl h-auto">
+                <TabsTrigger 
+                  value="buses" 
+                  className="rounded-xl px-8 py-3.5 gap-3 data-[state=active]:bg-primary data-[state=active]:text-white font-black uppercase text-xs tracking-widest transition-all"
+                >
+                  <Bus className="h-4 w-4" /> Intercity Coaches
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="flights" 
+                  className="rounded-xl px-8 py-3.5 gap-3 data-[state=active]:bg-primary data-[state=active]:text-white font-black uppercase text-xs tracking-widest transition-all"
+                >
+                  <Plane className="h-4 w-4" /> Domestic Flights
+                </TabsTrigger>
+              </TabsList>
 
-            <TabsContent value="buses" className="space-y-4">
-              {filteredBuses.length > 0 ? (
-                filteredBuses.map((r) => (
-                  <div key={r.id} className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-5 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex-1">
-                      <div className="mb-1 flex items-center gap-2">
-                        <Badge variant="secondary">{r.type}</Badge>
-                        <span className="font-semibold">{r.operator}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <span>{r.from}</span>
-                        <ArrowRight className="h-3 w-3" />
-                        <span>{r.to}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-6">
-                      <div className="text-center">
-                        <p className="text-sm font-medium">{r.departure}</p>
-                        <p className="text-xs text-muted-foreground">Depart</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-sm font-medium">{r.arrival}</p>
-                        <p className="text-xs text-muted-foreground">Arrive</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-xs text-muted-foreground">{r.seats} seats left</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xl font-bold text-primary">GH₵{r.price}</p>
-                      </div>
-                      <Button size="sm" onClick={() => handleBookTransport(r, false)}>Book</Button>
-                    </div>
+              <div className="flex items-center gap-6">
+                <div className="flex items-center gap-2 text-xs font-black text-gray-400 uppercase tracking-widest">
+                  <span className="flex h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                  Real-time updates
+                </div>
+                <div className="flex items-center gap-2 text-xs font-black text-gray-400 uppercase tracking-widest">
+                  <Shield className="h-4 w-4 text-primary" />
+                  Verified Operators
+                </div>
+              </div>
+            </div>
+
+            <TabsContent value="buses" className="mt-0 focus-visible:ring-0">
+              <div className="grid gap-6">
+                {isLoading ? (
+                  <div className="flex flex-col items-center justify-center py-32 bg-white rounded-[3rem] border border-gray-100 shadow-sm">
+                    <Loader2 className="h-12 w-12 text-primary animate-spin mb-6" />
+                    <p className="font-black text-gray-400 uppercase tracking-widest">Scanning schedules...</p>
                   </div>
-                ))
-              ) : (
-                <div className="py-12 text-center text-muted-foreground">No bus routes found for these locations</div>
-              )}
+                ) : filteredBuses.length > 0 ? (
+                  filteredBuses.map((r) => (
+                    <TransportCard key={r.id} item={r} onBook={handleBookTransport} />
+                  ))
+                ) : (
+                  <EmptyState type="bus" />
+                )}
+              </div>
             </TabsContent>
 
-            <TabsContent value="flights" className="space-y-4">
-              {filteredFlights.length > 0 ? (
-                filteredFlights.map((f) => (
-                  <div key={f.id} className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-5 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex-1">
-                      <p className="mb-1 font-semibold">{f.airline}</p>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <span>{f.from}</span>
-                        <Plane className="h-3 w-3" />
-                        <span>{f.to}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-6">
-                      <div className="text-center">
-                        <p className="text-sm font-medium">{f.departure}</p>
-                        <p className="text-xs text-muted-foreground">Depart</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-sm font-medium">{f.arrival}</p>
-                        <p className="text-xs text-muted-foreground">Arrive</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-xs text-muted-foreground">{f.seats} seats left</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xl font-bold text-primary">GH₵{f.price}</p>
-                      </div>
-                      <Button size="sm" onClick={() => handleBookTransport(f, true)}>Book</Button>
-                    </div>
+            <TabsContent value="flights" className="mt-0 focus-visible:ring-0">
+               <div className="grid gap-6">
+                {isLoading ? (
+                  <div className="flex flex-col items-center justify-center py-32 bg-white rounded-[3rem] border border-gray-100 shadow-sm">
+                    <Loader2 className="h-12 w-12 text-primary animate-spin mb-6" />
+                    <p className="font-black text-gray-400 uppercase tracking-widest">Finding active flight paths...</p>
                   </div>
-                ))
-              ) : (
-                <div className="py-12 text-center text-muted-foreground">No flights found for these locations</div>
-              )}
+                ) : filteredFlights.length > 0 ? (
+                  filteredFlights.map((f) => (
+                    <TransportCard key={f.id} item={f} onBook={handleBookTransport} />
+                  ))
+                ) : (
+                  <EmptyState type="flight" />
+                )}
+              </div>
             </TabsContent>
           </Tabs>
+        </div>
+      </section>
+
+      {/* ── INFO SECTION ── */}
+      <section className="py-24 bg-gray-50 border-t border-gray-100">
+        <div className="container">
+          <div className="grid md:grid-cols-3 gap-12">
+            <div className="flex flex-col gap-4 p-8 bg-white rounded-[2rem] shadow-sm border border-white">
+              <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mb-2">
+                <Clock className="h-7 w-7" />
+              </div>
+              <h3 className="font-black text-xl text-gray-900 tracking-tight">Arrive Early</h3>
+              <p className="text-gray-500 font-medium leading-relaxed">
+                For STC and VIP coaches, we recommend arriving at the terminal 45 minutes before departure to manifest and secure luggage.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-4 p-8 bg-white rounded-[2rem] shadow-sm border border-white">
+              <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mb-2">
+                <CreditCard className="h-7 w-7" />
+              </div>
+              <h3 className="font-black text-xl text-gray-900 tracking-tight">Digital Boarding</h3>
+              <p className="text-gray-500 font-medium leading-relaxed">
+                No need for printers. Show your digital voucher code at the boarding gate. Our partners use TripEase-enabled QR scanners.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-4 p-8 bg-white rounded-[2rem] shadow-sm border border-white">
+              <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mb-2">
+                <AlertCircle className="h-7 w-7" />
+              </div>
+              <h3 className="font-black text-xl text-gray-900 tracking-tight">Luggage Policy</h3>
+              <p className="text-gray-500 font-medium leading-relaxed">
+                Standard bus tickets include 1 suitcase up to 20kg. Additional luggage may attract a small fee payable at the terminal.
+              </p>
+            </div>
+          </div>
         </div>
       </section>
     </Layout>
   );
 };
+
+const TransportCard = ({ item, onBook }: { item: ITransport, onBook: (item: ITransport) => void }) => {
+  const isFlight = item.type === "flight";
+  
+  return (
+    <Card className="overflow-hidden border-2 border-gray-50 hover:border-primary/20 hover:shadow-2xl transition-all duration-500 rounded-[2.5rem] group bg-white">
+      <CardContent className="p-0">
+        <div className="flex flex-col lg:flex-row">
+          {/* Logo & Operator Side */}
+          <div className={cn(
+            "lg:w-64 p-8 flex flex-col items-center justify-center border-b lg:border-b-0 lg:border-r border-gray-50",
+            isFlight ? "bg-blue-50/10" : "bg-green-50/10"
+          )}>
+            <div className="mb-4 h-16 w-16 rounded-2xl bg-white shadow-xl flex items-center justify-center p-2 group-hover:scale-110 transition-transform duration-500">
+               {isFlight ? <Plane className="h-8 w-8 text-blue-600" /> : <Bus className="h-8 w-8 text-green-600" />}
+            </div>
+            <h4 className="font-black text-gray-900 text-lg text-center leading-tight mb-2 uppercase tracking-tighter">{item.operator}</h4>
+            <Badge variant="outline" className="rounded-full bg-white font-bold text-[10px] uppercase tracking-[0.15em] border-gray-100 px-3">
+              {item.type}
+            </Badge>
+          </div>
+
+          {/* Route & Timing Side */}
+          <div className="flex-1 p-8">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-8 h-full">
+              <div className="flex flex-1 items-center justify-between w-full max-w-xl">
+                <div className="text-center md:text-left">
+                  <p className="text-2xl font-black text-gray-900 mb-1">{item.departure_time}</p>
+                  <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">{item.from_location}</p>
+                </div>
+
+                <div className="flex flex-col items-center px-4 flex-1">
+                   <div className="flex items-center gap-1 w-full text-gray-200">
+                      <div className="h-[2px] flex-1 bg-gray-100 rounded-full" />
+                      {isFlight ? <Plane className="h-5 w-5 text-primary rotate-90" /> : <Bus className="h-5 w-5 text-primary" />}
+                      <div className="h-[2px] flex-1 bg-gray-100 rounded-full" />
+                   </div>
+                   <span className="mt-2 text-[10px] font-black text-gray-300 uppercase tracking-[0.3em]">Direct</span>
+                </div>
+
+                <div className="text-center md:text-right">
+                  <p className="text-2xl font-black text-gray-900 mb-1">{item.arrival_time}</p>
+                  <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">{item.to_location}</p>
+                </div>
+              </div>
+
+              {/* Pricing & CTA */}
+              <div className="w-full md:w-auto flex flex-row md:flex-col items-center justify-between md:justify-center md:items-end gap-4 md:pl-12 md:border-l border-gray-100">
+                <div className="flex flex-col md:items-end">
+                   <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Per Person</span>
+                   <div className="flex items-baseline gap-1">
+                     <span className="text-sm font-black text-gray-400">GH₵</span>
+                     <span className="text-3xl font-black text-gray-900 tracking-tighter">{item.price}</span>
+                   </div>
+                   <div className="mt-1 flex items-center gap-1.5 text-[10px] font-bold text-green-600 uppercase">
+                      <Sparkles className="h-3 w-3" /> 
+                      {item.capacity} seats left
+                   </div>
+                </div>
+                
+                <Button 
+                  onClick={() => onBook(item)}
+                  className="h-14 px-10 rounded-2xl bg-gray-900 hover:bg-primary text-white font-black tracking-widest transition-all group-hover:shadow-xl group-hover:shadow-primary/20"
+                >
+                  SECURE SEAT <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-2 transition-transform" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+const EmptyState = ({ type }: { type: string }) => (
+  <div className="flex flex-col items-center justify-center py-24 bg-white rounded-[3rem] border-2 border-dashed border-gray-200 text-center px-6">
+    <div className="h-20 w-20 rounded-3xl bg-gray-50 flex items-center justify-center text-gray-200 mb-6">
+      <AlertCircle className="h-10 w-10" />
+    </div>
+    <h3 className="text-2xl font-black text-gray-900 tracking-tight mb-2">No {type === 'flight' ? 'flights' : 'coaches'} found</h3>
+    <p className="text-gray-400 font-medium max-w-sm mx-auto">
+      Try adjusting your search criteria or checking another date. 
+      Popular routes sell out fast!
+    </p>
+    <Button 
+      variant="outline" 
+      className="mt-8 rounded-xl font-bold px-8 border-gray-200"
+      onClick={() => window.location.reload()}
+    >
+      CLEAR FILTERS
+    </Button>
+  </div>
+);
 
 export default Transport;

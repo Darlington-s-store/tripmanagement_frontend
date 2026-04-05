@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import {
   Calendar, Hotel, MapPin, CreditCard, Star,
   Loader, Search, ArrowUpRight, Clock, Map, Plane, Compass,
-  AlertCircle, CheckCircle2, XCircle
+  AlertCircle, CheckCircle2, XCircle, Download
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { bookingsService, Booking } from "@/services/bookings";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
+import ReceiptView from "@/components/dashboard/ReceiptView";
 
 const statusIcons: Record<string, any> = {
   confirmed: { icon: CheckCircle2, cls: "text-emerald-500 bg-emerald-50 border-emerald-100", label: "Confirmed" },
@@ -23,6 +24,7 @@ const UserBookings = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [filter, setFilter] = useState("all");
+  const [selectedBookingForReceipt, setSelectedBookingForReceipt] = useState<Booking | null>(null);
 
   useEffect(() => {
     loadBookings();
@@ -33,7 +35,7 @@ const UserBookings = () => {
     try {
       const data = await bookingsService.getUserBookings();
       setBookings(data);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error("Failed to load bookings");
       console.error(error);
     } finally {
@@ -47,7 +49,7 @@ const UserBookings = () => {
       await bookingsService.cancelBooking(bookingId);
       toast.success("Booking cancelled successfully");
       loadBookings();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error("Failed to cancel booking");
     }
   };
@@ -154,6 +156,14 @@ const UserBookings = () => {
                       </div>
 
                       <div className="flex flex-wrap items-center gap-3 md:border-l border-slate-100 md:pl-8">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => setSelectedBookingForReceipt(b)}
+                          className="rounded-xl h-10 px-4 gap-1.5"
+                        >
+                          <Download className="h-3.5 w-3.5" /> Receipt
+                        </Button>
                         <Button variant="outline" size="sm" asChild className="rounded-xl h-10 px-4">
                           <Link to={`/dashboard/bookings/${b.id}`}>View Details</Link>
                         </Button>
@@ -190,6 +200,13 @@ const UserBookings = () => {
             <Link to="/destinations">Find Inspiration</Link>
           </Button>
         </div>
+
+        {selectedBookingForReceipt && (
+          <ReceiptView
+            booking={selectedBookingForReceipt}
+            onClose={() => setSelectedBookingForReceipt(null)}
+          />
+        )}
       </div>
     </DashboardLayout>
   );

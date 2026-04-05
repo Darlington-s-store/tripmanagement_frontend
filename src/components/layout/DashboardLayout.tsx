@@ -1,8 +1,9 @@
 import { ReactNode, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { MapPin, Menu, X, Home, Calendar, BookOpen, User, Settings, LogOut, Star, Building, Users, BarChart3, Shield, CheckCircle, MessageSquare, Bell, Search, Landmark, LayoutGrid, FileText, Hotel, Plane, Info, RefreshCcw, Gavel, ClipboardCheck } from "lucide-react";
+import { MapPin, Menu, X, Home, Calendar, BookOpen, User, Settings, LogOut, Star, Building, Users, BarChart3, Shield, CheckCircle, MessageSquare, Search, Landmark, LayoutGrid, FileText, Hotel, Plane, Info, RefreshCcw, Gavel, ClipboardCheck, Bus, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import NotificationBell from "@/components/notifications/NotificationBell";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 
 interface DashboardLayoutProps {
@@ -13,9 +14,8 @@ interface DashboardLayoutProps {
 const sidebarLinks = {
   user: [
     { label: "Dashboard", href: "/dashboard", icon: Home },
-    { label: "Plan a Trip", href: "/trips/new", icon: MapPin },
+    { label: "Trips", href: "/dashboard/trips", icon: BookOpen },
     { label: "My Bookings", href: "/dashboard/bookings", icon: Calendar },
-    { label: "Itineraries", href: "/dashboard/itineraries", icon: BookOpen },
     { label: "Reviews", href: "/dashboard/reviews", icon: Star },
     { label: "Profile", href: "/dashboard/profile", icon: User },
     { label: "Settings", href: "/dashboard/settings", icon: Settings },
@@ -30,20 +30,17 @@ const sidebarLinks = {
   admin: [
     { label: "Dashboard", href: "/admin", icon: LayoutGrid },
     { label: "Users", href: "/admin/users", icon: Users },
+    { label: "Transports", href: "/admin/transports", icon: Bus },
     { label: "Destinations", href: "/admin/destinations", icon: MapPin },
     { label: "Hotels", href: "/admin/hotels", icon: Hotel },
     { label: "Attractions", href: "/admin/attractions", icon: Landmark },
-    { label: "Categories", href: "/admin/categories", icon: LayoutGrid },
+    { label: "Reviews", href: "/admin/reviews", icon: MessageSquare },
     { label: "Itineraries", href: "/admin/itineraries", icon: FileText },
-    { label: "Travel Info", href: "/admin/travel-info", icon: Bell },
-    { label: "Trips", href: "/admin/trips", icon: Plane },
-    { label: "Listings", href: "/admin/listings", icon: Building },
+    { label: "Categories", href: "/admin/categories", icon: LayoutGrid },
     { label: "Bookings", href: "/admin/bookings", icon: Calendar },
-    { label: "Reviews", href: "/admin/reviews", icon: Star },
     { label: "Approvals", href: "/admin/approvals", icon: ClipboardCheck },
-    { label: "Refunds", href: "/admin/refunds", icon: RefreshCcw },
-    { label: "Disputes", href: "/admin/disputes", icon: Gavel },
-    { label: "Analytics", href: "/admin/analytics", icon: BarChart3 },
+    { label: "Notifications", href: "/admin/notifications", icon: Bell },
+    { label: "Reports", href: "/admin/analytics", icon: BarChart3 },
     { label: "Settings", href: "/admin/settings", icon: Settings },
   ],
 };
@@ -53,7 +50,11 @@ const DashboardLayout = ({ children, role }: DashboardLayoutProps) => {
   const location = useLocation();
   const links = sidebarLinks[role];
 
-  const currentPage = links.find((l) => l.href === location.pathname)?.label || "Dashboard";
+  const currentLink =
+    [...links]
+      .sort((left, right) => right.href.length - left.href.length)
+      .find((link) => location.pathname === link.href || location.pathname.startsWith(`${link.href}/`));
+  const currentPage = currentLink?.label || "Dashboard";
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -79,7 +80,7 @@ const DashboardLayout = ({ children, role }: DashboardLayoutProps) => {
         <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-3">
           {links.map((link, idx) => {
             const Icon = link.icon;
-            const isActive = location.pathname === link.href;
+            const isActive = currentLink?.href === link.href;
             return (
               <Link
                 key={`${link.href}-${idx}`}
@@ -131,10 +132,7 @@ const DashboardLayout = ({ children, role }: DashboardLayoutProps) => {
               <Search className="h-4 w-4 text-muted-foreground" />
               <Input placeholder="Search..." className="h-8 w-40 border-0 bg-transparent shadow-none focus-visible:ring-0" />
             </div>
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="h-4 w-4" />
-              <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-primary" />
-            </Button>
+            <NotificationBell />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex h-8 w-8 items-center justify-center rounded-full bg-primary font-medium text-primary-foreground text-sm">

@@ -86,7 +86,7 @@ const DestinationDetail = () => {
             toast.success("Review submitted! It will appear after moderation.");
             // Refresh reviews (will show if published)
             fetchReviews(id);
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error(error);
             toast.error(error.message || "Failed to post review");
         }
@@ -266,9 +266,9 @@ const DestinationDetail = () => {
                             </TabsContent>
                             <TabsContent value="map" className="animate-in fade-in slide-in-from-bottom-2 duration-300">
                                 <div className="aspect-video rounded-3xl overflow-hidden border border-border shadow-sm bg-muted relative group">
-                                    {(attraction as any).location_map ? (
+                                    {(attraction as any /* eslint-disable-line @typescript-eslint/no-explicit-any */).location_map ? (
                                         <iframe 
-                                            src={(attraction as any).location_map}
+                                            src={(attraction as any /* eslint-disable-line @typescript-eslint/no-explicit-any */).location_map}
                                             className="w-full h-full border-0"
                                             allowFullScreen
                                             loading="lazy"
@@ -277,7 +277,7 @@ const DestinationDetail = () => {
                                         <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-8 text-center">
                                             <MapIcon className="h-12 w-12 mb-4 opacity-20" />
                                             <p className="font-semibold">Interactive map not available</p>
-                                            <p className="text-sm">Located in {(attraction as any).location_data || attraction.region}</p>
+                                            <p className="text-sm">Located in {(attraction as any /* eslint-disable-line @typescript-eslint/no-explicit-any */).location_data || attraction.region}</p>
                                         </div>
                                     )}
                                 </div>

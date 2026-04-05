@@ -8,8 +8,6 @@ import { adminService, Dispute } from "@/services/admin";
 import { toast } from "sonner";
 
 interface ExtendedDispute extends Dispute {
-    user: string;
-    provider: string;
     type: string;
     date: string;
     priority: string;
@@ -32,9 +30,7 @@ const AdminDisputes = () => {
             // Map visually required fields
             const mapped = disputesData.map(d => ({
                 ...d,
-                user: "User", // Mock fallback
-                provider: "Provider", // Mock fallback
-                type: d.description.substring(0, 30) + '...', // We use description as type title if missing
+                type: d.description?.substring(0, 30) + '...' || 'Dispute',
                 date: new Date(d.created_at).toLocaleDateString(),
                 priority: d.status === 'open' ? 'high' : 'medium'
             }));
@@ -141,7 +137,7 @@ const AdminDisputes = () => {
                                     <div className="grid gap-1 sm:w-1/3">
                                         <div className="flex items-center gap-2">
                                             <span className="font-medium text-primary">{dispute.id.substring(0, 8)}</span>
-                                            {getPriorityBadge((dispute as any).priority)}
+                                            {getPriorityBadge((dispute as any /* eslint-disable-line @typescript-eslint/no-explicit-any */).priority)}
                                         </div>
                                         <span className="text-sm text-muted-foreground">Booking: {dispute.booking_id.substring(0, 8)}</span>
                                         <div className="mt-1 text-sm text-foreground overflow-hidden text-ellipsis whitespace-nowrap" title={dispute.description}>
@@ -150,13 +146,8 @@ const AdminDisputes = () => {
                                     </div>
 
                                     <div className="grid gap-1 sm:w-1/3">
-                                        <span className="text-sm text-muted-foreground">
-                                            <strong className="text-foreground">User:</strong> {dispute.user}
-                                        </span>
-                                        <span className="text-sm text-muted-foreground">
-                                            <strong className="text-foreground">Provider:</strong> {dispute.provider}
-                                        </span>
                                         <span className="text-xs text-muted-foreground">Date: {dispute.date}</span>
+                                        <span className="text-xs text-muted-foreground">Booking ID: {dispute.booking_id}</span>
                                     </div>
 
                                     <div className="flex items-center gap-4 sm:w-1/3 sm:justify-end">

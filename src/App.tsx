@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import Index from "./pages/Index";
@@ -31,19 +31,30 @@ import AdminCreateUser from "./pages/admin/AdminCreateUser";
 import AdminEditUser from "./pages/admin/AdminEditUser";
 import AdminUserActivity from "./pages/admin/AdminUserActivity";
 import AdminResetPassword from "./pages/admin/AdminResetPassword";
+import AdminUserOverview from "./pages/admin/AdminUserOverview";
 import AdminDestinations from "./pages/admin/AdminDestinations";
+import AdminCreateDestination from "./pages/admin/AdminCreateDestination";
+import AdminEditDestination from "./pages/admin/AdminEditDestination";
+import AdminDestinationOverview from "./pages/admin/AdminDestinationOverview";
 import AdminAttractions from "./pages/admin/AdminAttractions";
+import AdminAttractionOverview from "./pages/admin/AdminAttractionOverview";
 import AdminCategories from "./pages/admin/AdminCategories";
 import AdminSuggestedItineraries from "./pages/admin/AdminSuggestedItineraries";
 import AdminTravelInfo from "./pages/admin/AdminTravelInfo";
 import AdminListings from "./pages/admin/AdminListings";
 import AdminApprovals from "./pages/admin/AdminApprovals";
 import AdminBookings from "./pages/admin/AdminBookings";
+import AdminBookingOverview from "./pages/admin/AdminBookingOverview";
 import AdminTrips from "./pages/admin/AdminTrips";
+import AdminTripOverview from "./pages/admin/AdminTripOverview";
 import AdminReviews from "./pages/admin/AdminReviews";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminHotels from "./pages/admin/AdminHotels";
+import AdminTransports from "./pages/admin/AdminTransports";
+import AdminTransportForm from "./pages/admin/AdminTransportForm";
+import AdminHotelOverview from "./pages/admin/AdminHotelOverview";
+import AdminNotifications from "./pages/admin/AdminNotifications";
 import AdminLogin from "./pages/admin/AdminLogin";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import ResetPassword from "./pages/auth/ResetPassword";
@@ -105,7 +116,8 @@ const App = () => (
             <Route path="/dashboard/bookings" element={<ProtectedRoute><UserBookings /></ProtectedRoute>} />
             <Route path="/dashboard/bookings/:id" element={<ProtectedRoute><BookingDetail /></ProtectedRoute>} />
             <Route path="/dashboard/profile" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
-            <Route path="/dashboard/itineraries" element={<ProtectedRoute><UserItineraries /></ProtectedRoute>} />
+            <Route path="/dashboard/trips" element={<ProtectedRoute><UserItineraries /></ProtectedRoute>} />
+            <Route path="/dashboard/itineraries" element={<ProtectedRoute><Navigate to="/dashboard/trips" replace /></ProtectedRoute>} />
             <Route path="/dashboard/reviews" element={<ProtectedRoute><UserReviews /></ProtectedRoute>} />
             <Route path="/dashboard/settings" element={<ProtectedRoute><UserSettings /></ProtectedRoute>} />
 
@@ -120,24 +132,36 @@ const App = () => (
             <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>} />
             <Route path="/admin/users" element={<ProtectedRoute allowedRoles={['admin']}><AdminUsers /></ProtectedRoute>} />
             <Route path="/admin/users/new" element={<ProtectedRoute allowedRoles={['admin']}><AdminCreateUser /></ProtectedRoute>} />
+            <Route path="/admin/users/:id" element={<ProtectedRoute allowedRoles={['admin']}><AdminUserOverview /></ProtectedRoute>} />
             <Route path="/admin/users/:id/edit" element={<ProtectedRoute allowedRoles={['admin']}><AdminEditUser /></ProtectedRoute>} />
             <Route path="/admin/users/:id/activity" element={<ProtectedRoute allowedRoles={['admin']}><AdminUserActivity /></ProtectedRoute>} />
             <Route path="/admin/users/:id/reset-password" element={<ProtectedRoute allowedRoles={['admin']}><AdminResetPassword /></ProtectedRoute>} />
             <Route path="/admin/destinations" element={<ProtectedRoute allowedRoles={['admin']}><AdminDestinations /></ProtectedRoute>} />
+            <Route path="/admin/destinations/new" element={<ProtectedRoute allowedRoles={['admin']}><AdminCreateDestination /></ProtectedRoute>} />
+            <Route path="/admin/destinations/:id" element={<ProtectedRoute allowedRoles={['admin']}><AdminDestinationOverview /></ProtectedRoute>} />
+            <Route path="/admin/destinations/:id/edit" element={<ProtectedRoute allowedRoles={['admin']}><AdminEditDestination /></ProtectedRoute>} />
             <Route path="/admin/hotels" element={<ProtectedRoute allowedRoles={['admin']}><AdminHotels /></ProtectedRoute>} />
+            <Route path="/admin/transports" element={<ProtectedRoute allowedRoles={['admin']}><AdminTransports /></ProtectedRoute>} />
+            <Route path="/admin/transports/new" element={<ProtectedRoute allowedRoles={['admin']}><AdminTransportForm /></ProtectedRoute>} />
+            <Route path="/admin/transports/:id/edit" element={<ProtectedRoute allowedRoles={['admin']}><AdminTransportForm /></ProtectedRoute>} />
+            <Route path="/admin/hotels/:id" element={<ProtectedRoute allowedRoles={['admin']}><AdminHotelOverview /></ProtectedRoute>} />
             <Route path="/admin/attractions" element={<ProtectedRoute allowedRoles={['admin']}><AdminAttractions /></ProtectedRoute>} />
+            <Route path="/admin/attractions/:id" element={<ProtectedRoute allowedRoles={['admin']}><AdminAttractionOverview /></ProtectedRoute>} />
             <Route path="/admin/categories" element={<ProtectedRoute allowedRoles={['admin']}><AdminCategories /></ProtectedRoute>} />
             <Route path="/admin/itineraries" element={<ProtectedRoute allowedRoles={['admin']}><AdminSuggestedItineraries /></ProtectedRoute>} />
             <Route path="/admin/travel-info" element={<ProtectedRoute allowedRoles={['admin']}><AdminTravelInfo /></ProtectedRoute>} />
             <Route path="/admin/listings" element={<ProtectedRoute allowedRoles={['admin']}><AdminListings /></ProtectedRoute>} />
             <Route path="/admin/approvals" element={<ProtectedRoute allowedRoles={['admin']}><AdminApprovals /></ProtectedRoute>} />
             <Route path="/admin/bookings" element={<ProtectedRoute allowedRoles={['admin']}><AdminBookings /></ProtectedRoute>} />
+            <Route path="/admin/bookings/:id" element={<ProtectedRoute allowedRoles={['admin']}><AdminBookingOverview /></ProtectedRoute>} />
             <Route path="/admin/trips" element={<ProtectedRoute allowedRoles={['admin']}><AdminTrips /></ProtectedRoute>} />
+            <Route path="/admin/trips/:id" element={<ProtectedRoute allowedRoles={['admin']}><AdminTripOverview /></ProtectedRoute>} />
             <Route path="/admin/reviews" element={<ProtectedRoute allowedRoles={['admin']}><AdminReviews /></ProtectedRoute>} />
             <Route path="/admin/analytics" element={<ProtectedRoute allowedRoles={['admin']}><AdminAnalytics /></ProtectedRoute>} />
             <Route path="/admin/settings" element={<ProtectedRoute allowedRoles={['admin']}><AdminSettings /></ProtectedRoute>} />
             <Route path="/admin/refunds" element={<ProtectedRoute allowedRoles={['admin']}><AdminRefunds /></ProtectedRoute>} />
             <Route path="/admin/disputes" element={<ProtectedRoute allowedRoles={['admin']}><AdminDisputes /></ProtectedRoute>} />
+            <Route path="/admin/notifications" element={<ProtectedRoute allowedRoles={['admin']}><AdminNotifications /></ProtectedRoute>} />
 
             <Route path="*" element={<NotFound />} />
           </Routes>

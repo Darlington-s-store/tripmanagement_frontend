@@ -53,7 +53,7 @@ export default function AdminUserActivity() {
   const navigate = useNavigate();
 
   const [user, setUser] = useState<User | null>(null);
-  const [activity, setActivity] = useState<{ bookings: any[]; reviews: any[] } | null>(null);
+  const [activity, setActivity] = useState<{ bookings: any /* eslint-disable-line @typescript-eslint/no-explicit-any */[]; reviews: any /* eslint-disable-line @typescript-eslint/no-explicit-any */[] } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [tab, setTab] = useState("bookings");
 
@@ -77,8 +77,8 @@ export default function AdminUserActivity() {
     })();
   }, [id]);
 
-  const bookings: any[] = Array.isArray(activity?.bookings) ? activity.bookings : [];
-  const reviews: any[] = Array.isArray(activity?.reviews) ? activity.reviews : [];
+  const bookings: any /* eslint-disable-line @typescript-eslint/no-explicit-any */[] = Array.isArray(activity?.bookings) ? activity.bookings : [];
+  const reviews: any /* eslint-disable-line @typescript-eslint/no-explicit-any */[] = Array.isArray(activity?.reviews) ? activity.reviews : [];
 
   const totalSpent = bookings.reduce((sum, b) => sum + parseFloat(b.total_price || 0), 0);
   const avgRating = reviews.length
@@ -206,7 +206,7 @@ export default function AdminUserActivity() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {bookings.map((b: any) => (
+                  {bookings.map((b: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => (
                     <div
                       key={b.id}
                       className="flex flex-col gap-3 rounded-xl border border-gray-100 bg-gray-50 p-5 hover:border-gray-200 transition-colors sm:flex-row sm:items-start sm:justify-between"
@@ -262,7 +262,7 @@ export default function AdminUserActivity() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {reviews.map((r: any) => (
+                  {reviews.map((r: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => (
                     <div
                       key={r.id}
                       className="rounded-xl border border-gray-100 bg-gray-50 p-5 hover:border-gray-200 transition-colors"

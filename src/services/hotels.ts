@@ -58,20 +58,22 @@ export const hotelsService = {
   async createHotel(
     name: string,
     location: string,
-    pricePerNight: number,
+    price_per_night: number,
     description?: string,
     amenities?: string,
-    totalRooms?: number,
-    imageUrl?: string
+    total_rooms?: number,
+    image_url?: string,
+    region?: string
   ): Promise<Hotel> {
     const response = await apiClient.post<Hotel>('/hotels', {
       name,
       location,
-      pricePerNight,
+      price_per_night,
       description,
       amenities,
-      totalRooms,
-      imageUrl,
+      total_rooms,
+      image_url,
+      region
     });
     return response.data!;
   },

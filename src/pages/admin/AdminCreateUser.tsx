@@ -114,7 +114,7 @@ export default function AdminCreateUser() {
       });
       toast.success(`Account created for ${form.fullName}`);
       navigate("/admin/users");
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast.error(err.message || "Failed to create user. Please try again.");
     } finally {
       setIsSubmitting(false);
@@ -139,39 +139,61 @@ export default function AdminCreateUser() {
   return (
     <DashboardLayout role="admin">
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="gap-2 text-gray-500 hover:text-gray-900"
-            onClick={() => navigate("/admin/users")}
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Users
-          </Button>
-        </div>
+        <div className="flex flex-col gap-6">
+          {/* Sticky Header with Actions */}
+          <div className="sticky top-0 z-10 flex flex-col gap-4 border-l-4 border-primary bg-white/80 p-4 shadow-sm backdrop-blur-md sm:flex-row sm:items-center sm:justify-between sm:p-6 rounded-r-xl">
+            <div>
+              <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 gap-1.5 px-2 -ml-2 text-gray-500 hover:text-primary"
+                  onClick={() => navigate("/admin/users")}
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Back to Users
+                </Button>
+              </div>
+              <h1 className="font-display text-2xl font-bold text-gray-900 leading-tight">Add New User</h1>
+              <p className="text-sm text-gray-500 text-slate-500">Create a new platform account and assign access levels.</p>
+            </div>
 
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="font-display text-2xl font-bold text-gray-900">Add New User</h1>
-            <p className="mt-1 text-sm text-gray-500">
-              Create a new account and assign their access level. The user can change their password after first login.
-            </p>
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                className="h-11 rounded-xl px-6 font-medium border-gray-200 hover:bg-gray-50 hover:text-gray-900 transition-all"
+                onClick={() => navigate("/admin/users")}
+                type="button"
+              >
+                Cancel
+              </Button>
+              <Button
+                className="h-11 bg-primary hover:bg-primary/90 text-white rounded-xl px-8 gap-2 font-semibold shadow-sm shadow-primary/20 transition-all"
+                type="submit"
+                form="user-form"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                ) : (
+                  <UserPlus className="h-4 w-4" />
+                )}
+                {isSubmitting ? "Creating..." : "Create Account"}
+              </Button>
+            </div>
           </div>
-        </div>
 
-        <form onSubmit={handleSubmit}>
+          <form id="user-form" onSubmit={handleSubmit}>
           <div className="grid gap-6 lg:grid-cols-3">
 
             {/* ── Left: Form ── */}
             <div className="lg:col-span-2 space-y-5">
 
               {/* Identity */}
-              <div className="rounded-2xl border border-gray-200 bg-white p-6 space-y-5">
+              <div className="rounded-xl border border-gray-200 bg-white p-6 space-y-5 shadow-sm">
                 <div className="flex items-center gap-2 pb-1 border-b border-gray-100">
                   <User className="h-4 w-4 text-primary" />
-                  <h2 className="font-semibold text-gray-800">Personal Information</h2>
+                  <h2 className="font-semibold text-gray-800">General Information</h2>
                 </div>
 
                 <div className="grid gap-5 sm:grid-cols-2">
@@ -208,7 +230,7 @@ export default function AdminCreateUser() {
               </div>
 
               {/* Credentials */}
-              <div className="rounded-2xl border border-gray-200 bg-white p-6 space-y-5">
+              <div className="rounded-xl border border-gray-200 bg-white p-6 space-y-5 shadow-sm">
                 <div className="flex items-center gap-2 pb-1 border-b border-gray-100">
                   <Mail className="h-4 w-4 text-primary" />
                   <h2 className="font-semibold text-gray-800">Login Credentials</h2>
@@ -273,7 +295,7 @@ export default function AdminCreateUser() {
               </div>
 
               {/* Role */}
-              <div className="rounded-2xl border border-gray-200 bg-white p-6 space-y-5">
+              <div className="rounded-xl border border-gray-200 bg-white p-6 space-y-5 shadow-sm">
                 <div className="flex items-center gap-2 pb-1 border-b border-gray-100">
                   <Shield className="h-4 w-4 text-primary" />
                   <h2 className="font-semibold text-gray-800">Account Role</h2>
@@ -318,36 +340,14 @@ export default function AdminCreateUser() {
                 )}
               </div>
 
-              {/* Actions */}
-              <div className="flex items-center gap-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="rounded-xl px-6"
-                  onClick={() => navigate("/admin/users")}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  className="bg-primary hover:bg-primary/90 rounded-xl px-8 gap-2 font-semibold"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? (
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  ) : (
-                    <UserPlus className="h-4 w-4" />
-                  )}
-                  {isSubmitting ? "Creating account..." : "Create Account"}
-                </Button>
-              </div>
+              {/* Actions removed from bottom, moved to header */}
             </div>
 
             {/* ── Right: Overview Panel ── */}
             <div className="space-y-5">
 
-              {/* Role summary card */}
-              <div className="rounded-2xl border border-gray-200 bg-white p-5 space-y-4">
+              {/* Live preview */}
+              <div className="rounded-xl border border-gray-200 bg-white p-5 space-y-4 shadow-sm">
                 <h3 className="font-semibold text-gray-800 text-sm">Role Overview</h3>
 
                 <div className={`inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-semibold ${role.color}`}>
@@ -368,8 +368,8 @@ export default function AdminCreateUser() {
                 </div>
               </div>
 
-              {/* Live preview */}
-              <div className="rounded-2xl border border-gray-200 bg-white p-5 space-y-4">
+              {/* Tip */}
+              <div className="rounded-xl border border-blue-100 bg-blue-50 p-4">
                 <h3 className="font-semibold text-gray-800 text-sm">Account Preview</h3>
 
                 <div className="flex items-center gap-3">
@@ -421,7 +421,8 @@ export default function AdminCreateUser() {
               </div>
             </div>
           </div>
-        </form>
+          </form>
+        </div>
       </div>
     </DashboardLayout>
   );

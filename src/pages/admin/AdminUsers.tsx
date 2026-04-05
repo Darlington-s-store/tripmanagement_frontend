@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Users, Search, MoreVertical, Shield, Ban, Eye, CheckCircle2, UserPlus, Key, Trash2, Edit } from "lucide-react";
+import { Users, Search, MoreVertical, Shield, Ban, Eye, CheckCircle2, UserPlus, Key, Trash2, Edit, User as UserIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { adminService, User } from "@/services/admin";
+import { adminService, User, Booking, Review } from "@/services/admin";
 import { toast } from "sonner";
 
 const AdminUsers = () => {
@@ -38,11 +38,7 @@ const AdminUsers = () => {
   });
   const [newPassword, setNewPassword] = useState("");
 
-  useEffect(() => {
-    loadUsers();
-  }, [searchQuery, roleFilter, statusFilter]);
-
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     setIsLoading(true);
     try {
       const data = await adminService.getAllUsers({
@@ -57,7 +53,11 @@ const AdminUsers = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [searchQuery, roleFilter, statusFilter]);
+
+  useEffect(() => {
+    loadUsers();
+  }, [loadUsers]);
 
   const handleUpdateStatus = async (id: string, newStatus: string) => {
     try {
@@ -76,8 +76,9 @@ const AdminUsers = () => {
       setIsAddUserOpen(false);
       setFormData({ email: "", password: "", fullName: "", phone: "", role: "user" });
       loadUsers();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to create user");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to create user";
+      toast.error(message);
     }
   };
 
@@ -93,8 +94,9 @@ const AdminUsers = () => {
       toast.success("User updated successfully");
       setIsEditUserOpen(false);
       loadUsers();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to update user");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to update user";
+      toast.error(message);
     }
   };
 
@@ -105,8 +107,9 @@ const AdminUsers = () => {
       toast.success("Password reset successfully");
       setIsResetPasswordOpen(false);
       setNewPassword("");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to reset password");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to reset password";
+      toast.error(message);
     }
   };
 
@@ -122,7 +125,7 @@ const AdminUsers = () => {
   };
 
   const [isActivityOpen, setIsActivityOpen] = useState(false);
-  const [userActivity, setUserActivity] = useState<{ bookings: any[], reviews: any[] } | null>(null);
+  const [userActivity, setUserActivity] = useState<{ bookings: Booking[], reviews: Review[] } | null>(null);
   const [isActivityLoading, setIsActivityLoading] = useState(false);
 
   const handleViewActivity = async (user: User) => {
@@ -227,8 +230,11 @@ const AdminUsers = () => {
                         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 font-bold text-primary group-hover:bg-primary group-hover:text-white transition-all duration-300">
                           {u.full_name ? u.full_name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase() : u.email.substring(0, 2).toUpperCase()}
                         </div>
-                        <div>
-                          <p className="font-semibold text-foreground text-sm">{u.full_name || 'Anonymous User'}</p>
+                        <div
+                          className="cursor-pointer group/name"
+                          onClick={() => navigate(`/admin/users/${u.id}`)}
+                        >
+                          <p className="font-semibold text-foreground text-sm group-hover/name:text-primary transition-colors">{u.full_name || 'Anonymous User'}</p>
                           <p className="text-xs text-muted-foreground/80">{u.email}</p>
                         </div>
                       </div>
@@ -249,13 +255,17 @@ const AdminUsers = () => {
                         </span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-muted-foreground font-medium">{new Date(u.created_at).toLocaleDateString('en-GB')}</td>
+                    <td className="px-6 py-4 text-muted-foreground font-medium">{u.created_at ? new Date(u.created_at).toLocaleDateString('en-GB') : 'N/A'}</td>
                     <td className="px-6 py-4 text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="sm" className="rounded-xl h-8 w-8 p-0 hover:bg-accent/50"><MoreVertical className="h-4 w-4" /></Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-48 rounded-xl p-1 shadow-xl border-border">
+                          <DropdownMenuItem className="gap-2 rounded-lg py-2" onClick={() => navigate(`/admin/users/${u.id}`)}>
+                            <UserIcon className="h-3.5 w-3.5 text-primary" /> View Overview
+                          </DropdownMenuItem>
+
                           <DropdownMenuItem className="gap-2 rounded-lg py-2" onClick={() => {
                             navigate(`/admin/users/${u.id}/edit`);
                           }}>
@@ -397,7 +407,7 @@ const AdminUsers = () => {
                     <div className="text-center py-12 text-muted-foreground bg-muted/20 rounded-xl">No bookings found for this user.</div>
                   ) : (
                     <div className="space-y-3">
-                      {userActivity.bookings.map((b: any) => (
+                      {userActivity.bookings.map((b: Booking) => (
                         <div key={b.id} className="p-3 rounded-xl border border-border bg-card hover:border-primary/30 transition-colors">
                           <div className="flex justify-between items-start mb-2">
                             <Badge variant="outline" className="capitalize text-[10px]">{b.booking_type}</Badge>
@@ -427,7 +437,7 @@ const AdminUsers = () => {
                     <div className="text-center py-12 text-muted-foreground bg-muted/20 rounded-xl">No reviews found for this user.</div>
                   ) : (
                     <div className="space-y-3">
-                      {userActivity.reviews.map((r: any) => (
+                      {userActivity.reviews.map((r: Review) => (
                         <div key={r.id} className="p-3 rounded-xl border border-border bg-card">
                           <div className="flex items-center gap-1 mb-1">
                             {[1, 2, 3, 4, 5].map(star => (

@@ -6,9 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import Layout from "@/components/layout/Layout";
 import { useAuth } from "@/context/AuthContext";
+import { Navigate } from "react-router-dom";
+import { Trip, tripsService } from "@/services/trips";
 import { bookingsService } from "@/services/bookings";
 import { toast } from "sonner";
-import { Navigate } from "react-router-dom";
 
 type PaymentMethod = "mtn" | "vodafone" | "airteltigo" | "card";
 
@@ -44,7 +45,7 @@ const Checkout = () => {
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | null>(null);
   const [step, setStep] = useState<"method" | "details" | "confirm">("method");
   const [isProcessing, setIsProcessing] = useState(false);
-  const [userTrips, setUserTrips] = useState<any[]>([]);
+  const [userTrips, setUserTrips] = useState<Trip[]>([]);
   const [selectedTripId, setSelectedTripId] = useState<string | "none">("none");
 
   useEffect(() => {
@@ -55,7 +56,6 @@ const Checkout = () => {
 
   const loadTrips = async () => {
     try {
-      const { tripsService } = await import("@/services/trips");
       const trips = await tripsService.getUserTrips();
       setUserTrips(trips.filter(t => t.status === "planning" || t.status === "ongoing"));
     } catch (error) {
@@ -110,8 +110,9 @@ const Checkout = () => {
 
       toast.success("Booking completed successfully!");
       navigate("/dashboard/bookings");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to process booking");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to process booking";
+      toast.error(message);
     } finally {
       setIsProcessing(false);
     }

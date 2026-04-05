@@ -20,22 +20,26 @@ const GuideDetail = () => {
     const [selectedDate, setSelectedDate] = useState("");
     const [isBooking, setIsBooking] = useState(false);
 
+    // Get today's date in YYYY-MM-DD format
+    const today = new Date().toISOString().split('T')[0];
+
     useEffect(() => {
+        const loadGuide = async () => {
+            try {
+                setIsLoading(true);
+                const data = await guidesService.getGuideById(id!);
+                setGuide(data);
+            } catch (err) {
+                const error = err as Error;
+                toast.error("Failed to load guide details");
+                console.error(error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
         if (id) loadGuide();
     }, [id]);
-
-    const loadGuide = async () => {
-        try {
-            setIsLoading(true);
-            const data = await guidesService.getGuideById(id!);
-            setGuide(data);
-        } catch (error: any) {
-            toast.error("Failed to load guide details");
-            console.error(error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
 
     const handleBookGuide = () => {
         if (!isAuthenticated) {
@@ -162,6 +166,8 @@ const GuideDetail = () => {
                                                 type="date"
                                                 value={selectedDate}
                                                 onChange={(e) => setSelectedDate(e.target.value)}
+                                                min={today}
+                                                required
                                                 className="w-full bg-transparent outline-none text-sm"
                                             />
                                         </div>

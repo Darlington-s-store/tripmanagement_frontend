@@ -56,6 +56,7 @@ const AdminTrips = () => {
     const filtered = tripsList.filter((t) => {
         return (
             t.user_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (t.trip_name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
             t.destination.toLowerCase().includes(searchQuery.toLowerCase()) ||
             t.id.toLowerCase().includes(searchQuery.toLowerCase())
         );
@@ -102,7 +103,7 @@ const AdminTrips = () => {
                                     </div>
                                     <div className="flex gap-2">
                                         <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
-                                            <Link to={`/trips/${trip.id}`}>
+                                            <Link to={`/admin/trips/${trip.id}`}>
                                                 <Eye className="h-4 w-4" />
                                             </Link>
                                         </Button>
@@ -113,9 +114,12 @@ const AdminTrips = () => {
                                 </div>
 
                                 <div className="mt-4">
-                                    <h3 className="font-display text-lg font-bold">{trip.destination}</h3>
+                                    <h3 className="font-display text-lg font-bold">{trip.trip_name || trip.destination}</h3>
                                     <div className="mt-1 flex items-center gap-1 text-sm text-muted-foreground">
                                         <MapPin className="h-3 w-3" />
+                                        <span>{trip.destination}</span>
+                                    </div>
+                                    <div className="mt-1 flex items-center gap-1 text-sm text-muted-foreground">
                                         <span>User: <strong>{trip.user_name}</strong></span>
                                     </div>
                                 </div>

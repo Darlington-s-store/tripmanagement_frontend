@@ -13,12 +13,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Review } from "@/services/reviews";
-import { format } from "date-fns";
+import { PublicReview } from "@/services/reviews";
+import { formatDate } from "@/utils/date";
 
 interface ReviewsSectionProps {
     attractionId: string;
-    reviews: Review[];
+    reviews: PublicReview[];
     onAddReview?: (rating: number, comment: string) => Promise<void>;
     isAuthenticated: boolean;
 }
@@ -171,13 +171,13 @@ export const ReviewsSection = ({ attractionId, reviews, onAddReview, isAuthentic
                             <div className="flex justify-between items-start mb-4">
                                 <div className="flex items-center gap-3">
                                     <Avatar className="h-12 w-12 border-2 border-primary/10">
-                                        <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${review.reviewer_name}`} />
+                                        <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${review.full_name}`} />
                                         <AvatarFallback className="bg-primary/10 text-primary font-bold">
-                                            {review.reviewer_name?.substring(0, 2).toUpperCase()}
+                                            {review.full_name?.substring(0, 2).toUpperCase()}
                                         </AvatarFallback>
                                     </Avatar>
                                     <div>
-                                        <h5 className="font-bold leading-none mb-1">{review.reviewer_name}</h5>
+                                        <h5 className="font-bold leading-none mb-1">{review.full_name}</h5>
                                         <div className="flex items-center gap-2">
                                             <div className="flex gap-0.5">
                                                 {[1, 2, 3, 4, 5].map((s) => (
@@ -189,7 +189,7 @@ export const ReviewsSection = ({ attractionId, reviews, onAddReview, isAuthentic
                                             </div>
                                             <span className="text-[10px] text-muted-foreground flex items-center gap-1">
                                                 <Calendar className="h-3 w-3" />
-                                                {format(new Date(review.created_at), 'MMM d, yyyy')}
+                                                {formatDate(review.created_at, 'MMM d, yyyy')}
                                             </span>
                                         </div>
                                     </div>
@@ -200,7 +200,6 @@ export const ReviewsSection = ({ attractionId, reviews, onAddReview, isAuthentic
                             </div>
 
                             <div className="pl-15 ml-15">
-                                {review.title && <h6 className="font-bold mb-2">{review.title}</h6>}
                                 <p className="text-muted-foreground text-sm leading-relaxed mb-4">
                                     {review.comment}
                                 </p>

@@ -169,7 +169,7 @@ const TravelInfoDialog = ({ open, onOpenChange, info, onSuccess, inline = false 
                                 <CardContent className="p-0">
                                     <Select
                                         value={formData.category}
-                                        onValueChange={(value) => setFormData({ ...formData, category: value as any })}
+                                        onValueChange={(value) => setFormData({ ...formData, category: value as any /* eslint-disable-line @typescript-eslint/no-explicit-any */ })}
                                     >
                                         <SelectTrigger className="border-0 focus:ring-0 rounded-none px-4 py-3 h-12 text-sm md:text-base font-medium bg-transparent">
                                             <SelectValue placeholder="Select classification" />

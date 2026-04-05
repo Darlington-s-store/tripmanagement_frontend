@@ -1,53 +1,30 @@
 import { apiClient } from './api';
 
-export interface Review {
-  id: string;
-  booking_id: string;
-  user_id?: string;
-  rating: number;
-  title?: string;
-  comment?: string;
-  created_at: string;
-  booking_type?: string;
-  reference_id?: string;
+export interface ReviewSubmission {
+    user_id?: string;
+    booking_id?: string;
+    rating: number;
+    comment: string;
+    full_name?: string;
+    location?: string;
+}
+
+export interface PublicReview {
+    id: string;
+    full_name: string;
+    location: string;
+    comment: string;
+    rating: number;
+    created_at: string;
 }
 
 export const reviewsService = {
-  async createReview(bookingId: string, rating: number, title?: string, comment?: string): Promise<Review> {
-    const response = await apiClient.post<Review>('/reviews', {
-      bookingId,
-      rating,
-      title,
-      comment,
-    });
-    return response.data!;
-  },
+    async getPublishedReviews(): Promise<PublicReview[]> {
+        const response = await apiClient.get<PublicReview[]>('/reviews/published');
+        return response.data || [];
+    },
 
-  async getReviewsByBooking(bookingId: string): Promise<Review[]> {
-    const response = await apiClient.get<Review[]>(`/reviews/booking/${bookingId}`);
-    return response.data || [];
-  },
-
-  async getUserReviews(): Promise<Review[]> {
-    const response = await apiClient.get<Review[]>('/reviews');
-    return response.data || [];
-  },
-
-  async updateReview(id: string, rating?: number, title?: string, comment?: string): Promise<Review> {
-    const response = await apiClient.put<Review>(`/reviews/${id}`, {
-      rating,
-      title,
-      comment,
-    });
-    return response.data!;
-  },
-
-  async deleteReview(id: string): Promise<void> {
-    await apiClient.delete(`/reviews/${id}`);
-  },
-
-  async getServiceReviews(serviceId: string, serviceType: string): Promise<Review[]> {
-    const response = await apiClient.get<Review[]>(`/reviews/service/${serviceType}/${serviceId}`);
-    return response.data || [];
-  },
+    async submitReview(data: ReviewSubmission): Promise<void> {
+        await apiClient.post('/reviews', data);
+    }
 };

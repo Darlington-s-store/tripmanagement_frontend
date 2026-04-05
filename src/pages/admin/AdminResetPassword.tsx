@@ -128,7 +128,7 @@ export default function AdminResetPassword() {
       await adminService.resetPassword(id, { password });
       toast.success(`Password reset for ${user?.full_name}. Share it securely.`);
       navigate("/admin/users");
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast.error(err.message || "Password reset failed.");
     } finally {
       setIsSaving(false);

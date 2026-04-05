@@ -4,7 +4,7 @@ import {
     Calendar, Hotel, MapPin, CreditCard, Star,
     Loader, ArrowLeft, Clock, Compass,
     Map, Plane, AlertCircle, CheckCircle2, XCircle,
-    FileText, Users, Receipt, Info, Share2
+    FileText, Users, Receipt, Info, Share2, Download
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +14,7 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { bookingsService, Booking } from "@/services/bookings";
 import { toast } from "sonner";
 import ReviewDialog from "@/components/dashboard/ReviewDialog";
+import ReceiptView from "@/components/dashboard/ReceiptView";
 
 const statusIcons: Record<string, any> = {
     confirmed: { icon: CheckCircle2, cls: "text-emerald-500 bg-emerald-50 border-emerald-100", label: "Confirmed" },
@@ -29,6 +30,7 @@ const BookingDetail = () => {
     const [booking, setBooking] = useState<Booking | null>(null);
     const [isBookingLoading, setIsBookingLoading] = useState(true);
     const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
+    const [isReceiptOpen, setIsReceiptOpen] = useState(false);
 
     useEffect(() => {
         if (id) {
@@ -41,7 +43,7 @@ const BookingDetail = () => {
         try {
             const data = await bookingsService.getBookingById(id!);
             setBooking(data);
-        } catch (error: any) {
+        } catch (error: unknown) {
             toast.error("Failed to load booking details");
             console.error(error);
         } finally {
@@ -57,7 +59,7 @@ const BookingDetail = () => {
             await bookingsService.cancelBooking(booking.id);
             toast.success("Booking cancelled successfully");
             loadBooking();
-        } catch (error: any) {
+        } catch (error: unknown) {
             toast.error("Failed to cancel booking");
         }
     };
@@ -124,7 +126,13 @@ const BookingDetail = () => {
                             </p>
                         </div>
 
-                        <div className="flex items-center gap-3 bg-white p-2 rounded-2xl shadow-sm border border-slate-100">
+                        <div className="flex items-center gap-3 bg-white p-2 rounded-2xl shadow-sm border border-slate-100 flex-wrap">
+                            <Button 
+                                className="rounded-xl px-6 h-12 gap-2 shadow-lg shadow-emerald/20 bg-emerald-600 hover:bg-emerald-700"
+                                onClick={() => setIsReceiptOpen(true)}
+                            >
+                                <Download className="h-4 w-4" /> View Receipt
+                            </Button>
                             {booking.status === "confirmed" && (
                                 <Button variant="outline" className="text-destructive hover:bg-rose-50 border-rose-100 rounded-xl px-6 h-12" onClick={handleCancelBooking}>
                                     <XCircle className="h-4 w-4 mr-2" /> Cancel Booking
@@ -332,6 +340,13 @@ const BookingDetail = () => {
                     serviceName={booking.service_name || "Accommodation/Service"}
                     onSuccess={loadBooking}
                 />
+
+                {isReceiptOpen && booking && (
+                    <ReceiptView
+                        booking={booking}
+                        onClose={() => setIsReceiptOpen(false)}
+                    />
+                )}
             </div>
         </DashboardLayout>
     );

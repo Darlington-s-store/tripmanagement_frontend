@@ -39,6 +39,7 @@ const HotelDialog = ({ open, onOpenChange, hotel, onSuccess }: HotelDialogProps)
         amenities: "",
         image_url: "",
         rating: 5,
+        total_rooms: 0,
     });
 
     useEffect(() => {
@@ -52,6 +53,7 @@ const HotelDialog = ({ open, onOpenChange, hotel, onSuccess }: HotelDialogProps)
                 amenities: hotel.amenities,
                 image_url: hotel.image_url,
                 rating: hotel.rating,
+                total_rooms: hotel.total_rooms || 0,
             });
         } else {
             setFormData({
@@ -63,6 +65,7 @@ const HotelDialog = ({ open, onOpenChange, hotel, onSuccess }: HotelDialogProps)
                 amenities: "Wifi, AC, Parking, Restaurant",
                 image_url: "",
                 rating: 5,
+                total_rooms: 0,
             });
         }
     }, [hotel, open]);
@@ -81,8 +84,9 @@ const HotelDialog = ({ open, onOpenChange, hotel, onSuccess }: HotelDialogProps)
                     formData.price_per_night!,
                     formData.description,
                     formData.amenities,
-                    0, // totalRooms initial
-                    formData.image_url
+                    formData.total_rooms || 0,
+                    formData.image_url,
+                    formData.region
                 );
                 toast.success("Hotel created successfully");
             }
@@ -194,17 +198,29 @@ const HotelDialog = ({ open, onOpenChange, hotel, onSuccess }: HotelDialogProps)
                         />
                     </div>
 
-                    <div className="space-y-2">
-                        <Label htmlFor="rating">Star Rating (1-5)</Label>
-                        <Input
-                            id="rating"
-                            type="number"
-                            min="1"
-                            max="5"
-                            step="0.1"
-                            value={formData.rating}
-                            onChange={(e) => setFormData({ ...formData, rating: parseFloat(e.target.value) })}
-                        />
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="rating">Star Rating (1-5)</Label>
+                            <Input
+                                id="rating"
+                                type="number"
+                                min="1"
+                                max="5"
+                                step="0.1"
+                                value={formData.rating}
+                                onChange={(e) => setFormData({ ...formData, rating: parseFloat(e.target.value) })}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="total_rooms">Total Number of Rooms</Label>
+                            <Input
+                                id="total_rooms"
+                                type="number"
+                                min="0"
+                                value={formData.total_rooms}
+                                onChange={(e) => setFormData({ ...formData, total_rooms: parseInt(e.target.value) || 0 })}
+                            />
+                        </div>
                     </div>
 
                     <DialogFooter>

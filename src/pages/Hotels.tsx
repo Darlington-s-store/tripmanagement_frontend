@@ -41,7 +41,7 @@ const Hotels = () => {
         limit: 100,
       });
       setHotels(data);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error("Failed to load hotels");
       console.error(error);
     } finally {

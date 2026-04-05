@@ -1,3 +1,5 @@
+import path from 'path';
+import { fileURLToPath } from 'url';
 import express from 'express';
 import 'express-async-errors';
 import crypto from 'crypto';
@@ -22,11 +24,18 @@ import destinationsRoutes from './routes/destinations.js';
 import transportRoutes from './routes/transport.js';
 import flightsRoutes from './routes/flights.js';
 import notificationsRoutes from './routes/notifications.js';
+import receiptsRoutes from './routes/receipts.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
 dotenv.config();
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
+
+// Static files
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // CORS - Move to top for best preflight handling
 app.use(cors({
@@ -37,8 +46,8 @@ app.use(cors({
 }));
 
 // Body parser & Cookies
-app.use(express.json({ limit: '10kb' }));
-app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(cookieParser(process.env.JWT_SECRET || 'fallback-secret-for-cookies'));
 
 // Security Middleware (after CORS)
@@ -140,9 +149,26 @@ app.get('/api/csrf-token', (req, res) => {
   }
 });
 
-// Apply CSRF protection to all other API routes
+// Apply CSRF protection to all other API routes (skip public endpoints)
 app.use('/api', (req, res, next) => {
-  doubleCsrfProtection(req, res, next);
+  // Skip CSRF for public POST endpoints that guests can use
+  const publicPostPaths = ['/api/reviews'];
+  // Skip CSRF for file uploads and OPTIONS requests
+  const skipCsrfPaths = ['/auth/upload-avatar'];
+  
+  const isPublicPost = publicPostPaths.some(p => req.path === p.replace('/api', '') || req.originalUrl === p);
+  const isSkipCsrf = skipCsrfPaths.some(p => req.path === p);
+  
+  if ((isPublicPost && req.method === 'POST') || isSkipCsrf || req.method === 'OPTIONS') {
+    return next();
+  }
+  
+  doubleCsrfProtection(req, res, (err) => {
+    if (err) {
+      return next(err); // Pass CSRF errors to the error handler
+    }
+    next();
+  });
 });
 
 // Routes
@@ -158,6 +184,7 @@ app.use('/api/destinations', destinationsRoutes);
 app.use('/api/transport', transportRoutes);
 app.use('/api/flights', flightsRoutes);
 app.use('/api/notifications', notificationsRoutes);
+app.use('/api/receipts', receiptsRoutes);
 
 
 // Health check endpoint

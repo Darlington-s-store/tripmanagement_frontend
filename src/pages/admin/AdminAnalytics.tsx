@@ -75,10 +75,10 @@ const AdminAnalytics = () => {
         {/* Summary cards with animated entry style */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[
-            { label: "Total Revenue", value: `GH₵${Number(stats?.totalRevenue || 0).toLocaleString()}`, change: "+18.2%", icon: DollarSign, color: "text-emerald-500", bg: "bg-emerald-50" },
-            { label: "Total Bookings", value: Number(stats?.totalBookings || 0).toLocaleString(), change: "+23.1%", icon: Calendar, color: "text-blue-500", bg: "bg-blue-50" },
-            { label: "Active Users", value: Number(stats?.totalUsers || 0).toLocaleString(), change: "+12.5%", icon: Users, color: "text-amber-500", bg: "bg-amber-50" },
-            { label: "Verified Reviews", value: Number(stats?.totalReviews || 0).toLocaleString(), change: "+5.3%", icon: TrendingUp, color: "text-violet-500", bg: "bg-violet-50" },
+            { label: "Total Revenue", value: `GH₵${Number(stats?.totalRevenue || 0).toLocaleString()}`, icon: DollarSign, color: "text-emerald-500", bg: "bg-emerald-50" },
+            { label: "Total Bookings", value: Number(stats?.totalBookings || 0).toLocaleString(), icon: Calendar, color: "text-blue-500", bg: "bg-blue-50" },
+            { label: "Active Users", value: Number(stats?.totalUsers || 0).toLocaleString(), icon: Users, color: "text-amber-500", bg: "bg-amber-50" },
+            { label: "Verified Reviews", value: Number(stats?.totalReviews || 0).toLocaleString(), icon: TrendingUp, color: "text-violet-500", bg: "bg-violet-50" },
           ].map((s, idx) => {
             const Icon = s.icon;
             return (
@@ -89,10 +89,6 @@ const AdminAnalytics = () => {
                 <div className="flex items-center justify-between mb-4">
                   <div className={`rounded-xl ${s.bg} p-2.5 transition-colors group-hover:scale-110 duration-300`}>
                     <Icon className={`h-6 w-6 ${s.color}`} />
-                  </div>
-                  <div className="flex items-center gap-1 rounded-full bg-success/10 px-2 py-0.5 text-xs font-medium text-success">
-                    <TrendingUp className="h-3 w-3" />
-                    {s.change}
                   </div>
                 </div>
                 <div>
@@ -105,6 +101,27 @@ const AdminAnalytics = () => {
             );
           })}
         </div>
+
+          {/* Performance Summary Card */}
+          <div className="rounded-2xl border border-border bg-primary/5 p-6 shadow-sm flex flex-col justify-center">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="bg-primary/20 p-3 rounded-full">
+                <BarChart3 className="h-8 w-8 text-primary" />
+              </div>
+              <h3 className="text-xl font-bold">Growth Insight</h3>
+            </div>
+            <p className="text-sm text-balance leading-relaxed mb-6">
+              Track your business performance and engagement metrics over time. Currently focusing on <span className="font-semibold">Ghanaian luxury market</span> and city itineraries.
+            </p>
+            <div className="space-y-4">
+              <div className="w-full bg-background/50 rounded-lg p-3 border border-border/50">
+                <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-1">Avg. Transaction Value</p>
+                <div className="flex items-center justify-between">
+                  <span className="text-lg font-bold">GH₵{stats?.totalBookings ? (Number(stats.totalRevenue) / Number(stats.totalBookings)).toLocaleString(undefined, { minimumFractionDigits: 2 }) : '0.00'}</span>
+                </div>
+              </div>
+            </div>
+          </div>
 
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Main Chart - Revenue Trends */}

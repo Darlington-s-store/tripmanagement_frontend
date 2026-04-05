@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { User, Mail, Phone, MapPin, Camera, Save, Loader, Calendar, Shield, Map, Bookmark, Star, Key, FileText } from "lucide-react";
+import { User, Mail, Phone, MapPin, Camera, Save, Loader, Calendar, Shield, Map, Bookmark, Star, Key, FileText, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -7,12 +7,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { formatDate } from "@/utils/date";
 
 const UserProfile = () => {
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, uploadAvatar } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [formData, setFormData] = useState({
     full_name: "",
     email: "",
@@ -41,17 +42,50 @@ const UserProfile = () => {
   const handleSave = async () => {
     setIsLoading(true);
     try {
-      await updateProfile(formData.full_name, formData.phone, formData.bio);
+      await updateProfile({
+        fullName: formData.full_name,
+        phone: formData.phone,
+        bio: formData.bio
+      });
       toast.success("Profile updated successfully");
       setIsEditing(false);
-    } catch (error: any) {
-      toast.error(error.message || "Failed to update profile");
+    } catch (error: unknown) {
+      const err = error as { message?: string };
+      toast.error(err.message || "Failed to update profile");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const initials = formData.full_name
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error("Please upload an image file");
+      return;
+    }
+
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image size should be less than 5MB");
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      await uploadAvatar(file);
+      toast.success("Profile picture updated");
+    } catch (error: unknown) {
+      const err = error as { message?: string };
+      toast.error(err.message || "Failed to upload avatar");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const initials = (formData.full_name || user?.full_name || "")
     .split(" ")
     .filter(Boolean)
     .map((n) => n[0])
@@ -59,15 +93,16 @@ const UserProfile = () => {
     .toUpperCase()
     .substring(0, 2) || "U";
 
-  const memberSince = user?.created_at ? format(new Date(user.created_at), "MMMM yyyy") : "N/A";
+  const memberSince = user?.created_at ? formatDate(user.created_at, "MMMM yyyy") : "N/A";
 
   return (
     <DashboardLayout role="user">
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h2 className="font-display text-3xl font-bold text-slate-900 dark:text-white">Profile Settings</h2>
-            <p className="text-slate-500">Manage your personal information and travel preferences.</p>
+      <div className="space-y-8">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
+          <div className="space-y-2">
+            <h1 className="text-4xl font-bold">Your Profile</h1>
+            <p className="text-muted-foreground">Manage your account and travel preferences</p>
           </div>
           <div className="flex gap-2">
             {isEditing ? (
@@ -75,181 +110,157 @@ const UserProfile = () => {
                 <Button variant="outline" onClick={() => setIsEditing(false)} disabled={isLoading}>
                   Cancel
                 </Button>
-                <Button onClick={handleSave} disabled={isLoading} className="bg-primary hover:bg-primary/90">
+                <Button onClick={handleSave} disabled={isLoading}>
                   {isLoading ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                  Save Changes
+                  Save
                 </Button>
               </>
             ) : (
-              <Button onClick={() => setIsEditing(true)} className="bg-primary hover:bg-primary/90">
+              <Button onClick={() => setIsEditing(true)} variant="outline">
                 Edit Profile
               </Button>
             )}
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column: Avatar & Quick Info */}
-          <div className="lg:col-span-1 space-y-6">
-            <Card className="border-none shadow-sm bg-white dark:bg-slate-900">
+        {/* Main Content */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Sidebar */}
+          <div className="space-y-6">
+            {/* Avatar Card */}
+            <Card className="overflow-hidden">
               <CardContent className="pt-6">
-                <div className="flex flex-col items-center">
-                  <div className="relative mb-4">
-                    <div className="h-24 w-24 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center border-4 border-white shadow-md">
-                      <span className="text-3xl font-display font-bold text-primary">{initials}</span>
+                <div className="flex flex-col items-center space-y-4">
+                  <div className="relative">
+                    <div className="h-32 w-32 rounded-full bg-gradient-to-br from-primary to-primary/50 flex items-center justify-center overflow-hidden border-4 border-background">
+                      {user?.avatar_url ? (
+                        <img 
+                          src={`${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3001'}${user.avatar_url}`} 
+                          alt={formData.full_name}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-5xl font-bold text-white">{initials}</span>
+                      )}
+                      
+                      {isUploading && (
+                        <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                          <Loader className="h-8 w-8 text-white animate-spin" />
+                        </div>
+                      )}
                     </div>
                     {isEditing && (
-                      <Button size="icon" variant="ghost" className="absolute bottom-0 right-0 h-8 w-8 rounded-full bg-white shadow-sm border border-slate-200 hover:bg-slate-50">
-                        <Camera className="h-4 w-4 text-slate-600" />
-                      </Button>
+                      <>
+                        <input
+                          type="file"
+                          id="avatar-upload"
+                          className="hidden"
+                          accept="image/*"
+                          onChange={handleFileChange}
+                          disabled={isUploading}
+                        />
+                        <Button 
+                          size="icon"
+                          className="absolute bottom-0 right-0 h-10 w-10 rounded-full shadow-lg"
+                          asChild
+                        >
+                          <label htmlFor="avatar-upload" className="cursor-pointer flex items-center justify-center">
+                            <Camera className="h-5 w-5" />
+                          </label>
+                        </Button>
+                      </>
                     )}
                   </div>
-                  <h3 className="text-xl font-bold text-slate-900 dark:text-white">{formData.full_name || "Traveller"}</h3>
-                  <p className="text-sm text-slate-500 mb-6 capitalize">{user?.role || "Member"}</p>
-
-                  <div className="w-full grid grid-cols-3 gap-4 border-y border-slate-100 py-6 my-2">
-                    <div className="text-center">
-                      <p className="text-xl font-bold text-primary">0</p>
-                      <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Trips</p>
-                    </div>
-                    <div className="text-center border-x border-slate-100 px-2">
-                      <p className="text-xl font-bold text-primary">0</p>
-                      <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Reviews</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xl font-bold text-emerald-500">Explorer</p>
-                      <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Level</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-4 mt-6">
-                  <div className="flex items-center text-sm text-slate-600">
-                    <Mail className="h-4 w-4 mr-3 text-slate-400" />
-                    {formData.email}
-                  </div>
-                  <div className="flex items-center text-sm text-slate-600">
-                    <Calendar className="h-4 w-4 mr-3 text-slate-400" />
-                    Member since {memberSince}
-                  </div>
-                  <div className="flex items-center text-sm text-slate-600">
-                    <Shield className="h-4 w-4 mr-3 text-emerald-500" />
-                    Verified Account
+                  
+                  <div className="text-center space-y-1">
+                    <h2 className="text-2xl font-bold">{formData.full_name || "Traveller"}</h2>
+                    <p className="text-sm text-muted-foreground capitalize">{user?.role || "Member"}</p>
+                    <p className="text-xs text-muted-foreground pt-2">Member since {memberSince}</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="border-none shadow-sm bg-primary/5">
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-2 mb-2">
-                  <Star className="h-4 w-4 text-amber-500 fill-amber-500" />
-                  <span className="font-semibold text-primary">Pro Tip</span>
-                </div>
-                <p className="text-sm text-slate-600 leading-relaxed">
-                  Completing your profile helps TripEase tailor the best travel experiences in Ghana for you!
-                </p>
+            {/* Quick Links */}
+            <Card>
+              <CardContent className="pt-6 space-y-2">
+                <Button variant="ghost" className="w-full justify-start" size="sm">
+                  <Key className="mr-2 h-4 w-4" /> Change Password
+                </Button>
+                <Button variant="ghost" className="w-full justify-start" size="sm">
+                  <Shield className="mr-2 h-4 w-4" /> Security Settings
+                </Button>
+                <Button variant="ghost" className="w-full justify-start text-destructive hover:text-destructive" size="sm">
+                  <Trash2 className="mr-2 h-4 w-4" /> Delete Account
+                </Button>
               </CardContent>
             </Card>
           </div>
 
-          {/* Right Column: Edit Form */}
+          {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            <Card className="border-none shadow-sm bg-white dark:bg-slate-900">
+            {/* Contact Information */}
+            <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Personal Details</CardTitle>
-                <CardDescription>Update your basic information and bio.</CardDescription>
+                <CardTitle>Contact Information</CardTitle>
               </CardHeader>
-              <CardContent>
-                <form className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <CardContent className="space-y-4">
+                <div className="grid gap-4">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium flex items-center gap-2">
-                      <User className="h-3.5 w-3.5 text-slate-400" /> Full Name
-                    </label>
+                    <label className="text-sm font-medium">Full Name</label>
                     <Input
                       name="full_name"
-                      placeholder="e.g. Ama Serwaa"
+                      placeholder="Your full name"
                       value={formData.full_name}
                       onChange={handleChange}
                       disabled={!isEditing}
-                      className="bg-slate-50 border-slate-100 disabled:opacity-80"
+                      className="disabled:opacity-70"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium flex items-center gap-2">
-                      <Mail className="h-3.5 w-3.5 text-slate-400" /> Email Address
-                    </label>
-                    <Input
-                      name="email"
-                      type="email"
-                      value={formData.email}
-                      disabled={true}
-                      className="bg-slate-50 border-slate-100 opacity-60 cursor-not-allowed"
-                    />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Email</label>
+                      <Input
+                        name="email"
+                        type="email"
+                        value={formData.email}
+                        disabled={true}
+                        className="opacity-70 cursor-not-allowed"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Phone</label>
+                      <Input
+                        name="phone"
+                        type="tel"
+                        placeholder="+233..."
+                        value={formData.phone}
+                        onChange={handleChange}
+                        disabled={!isEditing}
+                        className="disabled:opacity-70"
+                      />
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium flex items-center gap-2">
-                      <Phone className="h-3.5 w-3.5 text-slate-400" /> Phone Number
-                    </label>
-                    <Input
-                      name="phone"
-                      type="tel"
-                      placeholder="+233 XX XXX XXXX"
-                      value={formData.phone}
-                      onChange={handleChange}
-                      disabled={!isEditing}
-                      className="bg-slate-50 border-slate-100 disabled:opacity-80"
-                    />
-                  </div>
-                  <div className="space-y-2 md:col-span-2">
-                    <label className="text-sm font-medium flex items-center gap-2">
-                      <FileText className="h-3.5 w-3.5 text-slate-400" /> About You (Bio)
-                    </label>
-                    <Textarea
-                      name="bio"
-                      placeholder="Tell us about your travel philosophy..."
-                      value={formData.bio}
-                      onChange={handleChange}
-                      disabled={!isEditing}
-                      rows={3}
-                      className="bg-slate-50 border-slate-100 disabled:opacity-80 resize-none"
-                    />
-                  </div>
-                </form>
+                </div>
               </CardContent>
             </Card>
 
-            <Card className="border-none shadow-sm bg-white dark:bg-slate-900">
+            {/* About */}
+            <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Security & Privacy</CardTitle>
-                <CardDescription>Keep your account secure.</CardDescription>
+                <CardTitle>About You</CardTitle>
+                <CardDescription>Tell travelers a bit about yourself</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center justify-between p-4 rounded-lg bg-slate-50 border border-slate-100">
-                  <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-600">
-                      <Key className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-sm">Account Password</h4>
-                      <p className="text-xs text-slate-500">Change your password at any time.</p>
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm">Update</Button>
-                </div>
-
-                <div className="flex items-center justify-between p-4 rounded-lg bg-slate-50 border border-slate-100">
-                  <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-600">
-                      <Shield className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-sm">Privacy Settings</h4>
-                      <p className="text-xs text-slate-500">Manage what others see about you.</p>
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm">Manage</Button>
-                </div>
+                <Textarea
+                  name="bio"
+                  placeholder="Share your travel interests, favorite destinations, or what makes you a great travel companion..."
+                  value={formData.bio}
+                  onChange={handleChange}
+                  disabled={!isEditing}
+                  rows={4}
+                  className="disabled:opacity-70 resize-none"
+                />
               </CardContent>
             </Card>
           </div>

@@ -36,6 +36,12 @@ export default function HotelDetail() {
   const [selectedRoom, setSelectedRoom] = useState<HotelRoom | null>(null);
   const [activeImage, setActiveImage] = useState(0);
 
+  // Get today's date in YYYY-MM-DD format
+  const today = new Date().toISOString().split('T')[0];
+  
+  // Get tomorrow's date
+  const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
   useEffect(() => {
     if (id) {
       loadHotel();
@@ -47,7 +53,7 @@ export default function HotelDetail() {
       setIsLoading(true);
       const data = await hotelsService.getHotelById(id!);
       setHotel(data);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error("Failed to load hotel details");
       console.error(error);
     } finally {
@@ -401,6 +407,7 @@ export default function HotelDetail() {
                             type="date"
                             value={checkInDate}
                             onChange={(e) => setCheckInDate(e.target.value)}
+                            min={today}
                             required
                             className="rounded-2xl border-muted bg-muted/20 focus-visible:ring-emerald-500 h-12"
                           />
@@ -411,6 +418,7 @@ export default function HotelDetail() {
                             type="date"
                             value={checkOutDate}
                             onChange={(e) => setCheckOutDate(e.target.value)}
+                            min={checkInDate || today}
                             required
                             className="rounded-2xl border-muted bg-muted/20 focus-visible:ring-emerald-500 h-12"
                           />

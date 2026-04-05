@@ -47,7 +47,8 @@ const ResetPassword = () => {
             setTimeout(() => {
                 navigate("/login");
             }, 3000);
-        } catch (error: any) {
+        } catch (err) {
+            const error = err as Error;
             toast.error(error.message || "Failed to reset password. Link may be expired.");
             setError(error.message || "Something went wrong.");
         } finally {

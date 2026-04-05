@@ -26,7 +26,7 @@ const NotificationBell = () => {
       setLoading(true);
       const data = await notificationsService.getUserNotifications();
       // Ensure data is an array
-      const notificationList = Array.isArray(data) ? data : (data as any).data || [];
+      const notificationList = Array.isArray(data) ? data : (data as any /* eslint-disable-line @typescript-eslint/no-explicit-any */).data || [];
       setNotifications(notificationList);
       setUnreadCount(notificationList.filter(n => !n.is_read).length);
     } catch (error) {
@@ -141,7 +141,16 @@ const NotificationBell = () => {
                       {notification.type.replace('_', ' ')}
                     </Badge>
                     <span className="text-[10px] text-muted-foreground">
-                      {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
+                      {(() => {
+                        try {
+                          const date = new Date(notification.created_at);
+                          return !isNaN(date.getTime()) 
+                            ? formatDistanceToNow(date, { addSuffix: true })
+                            : 'recently';
+                        } catch (e) {
+                          return 'recently';
+                        }
+                      })()}
                     </span>
                   </div>
                   

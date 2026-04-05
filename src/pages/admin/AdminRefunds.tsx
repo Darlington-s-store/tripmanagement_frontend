@@ -23,7 +23,6 @@ const AdminRefunds = () => {
             const refundsData = Array.isArray(data) ? data : [];
             const mapped = refundsData.map(r => ({
                 ...r,
-                user: "User", // Mock since the backend might not return user details for refunds directly 
                 date: new Date(r.created_at).toLocaleDateString(),
                 amount: `GH₵${r.amount}`,
             }));

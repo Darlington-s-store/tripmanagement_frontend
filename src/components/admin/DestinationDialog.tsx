@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import {
     Dialog,
     DialogContent,
+    DialogDescription,
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
@@ -35,7 +36,7 @@ interface DestinationDialogProps {
 
 const DestinationDialog = ({ open, onOpenChange, destination, categories, onSuccess, inline }: DestinationDialogProps) => {
     const [loading, setLoading] = useState(false);
-    const [formData, setFormData] = useState<any>({
+    const [formData, setFormData] = useState<any /* eslint-disable-line @typescript-eslint/no-explicit-any */>({
         name: "",
         region: "",
         category: "historical",
@@ -59,8 +60,9 @@ const DestinationDialog = ({ open, onOpenChange, destination, categories, onSucc
     useEffect(() => {
         if (open) {
             if (destination) {
-                // Extract numeric value from entrance_fee
-                const numericFee = parseFloat(destination.entrance_fee.replace(/[^0-9.]/g, '')) || 0;
+                // Extract numeric value from entrance_fee safely
+                const feeString = String(destination.entrance_fee || "");
+                const numericFee = parseFloat(feeString.replace(/[^0-9.]/g, '')) || 0;
                 setFeeAmount(numericFee);
                 setCurrency("GHS");
 
@@ -272,7 +274,7 @@ const DestinationDialog = ({ open, onOpenChange, destination, categories, onSucc
                                 <CardContent className="p-0 border-0">
                                     <Select
                                         value={formData.status}
-                                        onValueChange={(value) => setFormData({ ...formData, status: value as any })}
+                                        onValueChange={(value) => setFormData({ ...formData, status: value as any /* eslint-disable-line @typescript-eslint/no-explicit-any */ })}
                                     >
                                         <SelectTrigger className="border-0 focus:ring-0 rounded-none px-4 py-3 h-12 text-sm md:text-base font-medium bg-transparent">
                                             <SelectValue />
@@ -572,6 +574,9 @@ const DestinationDialog = ({ open, onOpenChange, destination, categories, onSucc
             <DialogContent className="max-w-4xl p-0 border-none shadow-none bg-transparent overflow-hidden">
                 <DialogHeader className="sr-only">
                     <DialogTitle>{destination ? "Edit Destination" : "Create Destination"}</DialogTitle>
+                    <DialogDescription>
+                        {destination ? "Modify destination details and photographic evidence." : "Initialize a new geographic destination in the regional atlas."}
+                    </DialogDescription>
                 </DialogHeader>
                 {formContent}
             </DialogContent>

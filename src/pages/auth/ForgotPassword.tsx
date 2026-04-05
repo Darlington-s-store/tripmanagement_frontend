@@ -23,7 +23,8 @@ const ForgotPassword = () => {
             await authService.forgotPassword(email);
             setIsSubmitted(true);
             toast.success("Requested successfully");
-        } catch (error: any) {
+        } catch (err) {
+            const error = err as Error;
             toast.error(error.message || "Something went wrong. Please try again.");
         } finally {
             setIsLoading(false);

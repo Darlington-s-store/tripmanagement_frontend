@@ -6,6 +6,11 @@ export interface ApiResponse<T> {
   data?: T;
 }
 
+interface ApiRequestInit extends RequestInit {
+  url?: string;
+  _isRetry?: boolean;
+}
+
 class ApiClient {
   private csrfToken: string | null = null;
 
@@ -30,10 +35,12 @@ class ApiClient {
     }
   }
 
-  private async getHeaders(isMutating = false): Promise<Record<string, string>> {
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
+  private async getHeaders(isMutating = false, isFormData = false): Promise<Record<string, string>> {
+    const headers: Record<string, string> = {};
+    
+    if (!isFormData) {
+      headers['Content-Type'] = 'application/json';
+    }
 
     const token = this.getToken();
     if (token) {
@@ -48,7 +55,7 @@ class ApiClient {
     return headers;
   }
 
-  async get<T>(endpoint: string, params?: Record<string, any>): Promise<ApiResponse<T>> {
+  async get<T>(endpoint: string, params?: Record<string, string | number | boolean | undefined>): Promise<ApiResponse<T>> {
     let url = `${API_URL}${endpoint}`;
     if (params) {
       const qs = new URLSearchParams();
@@ -71,12 +78,13 @@ class ApiClient {
     return this.handleResponse<T>(response, { ...options, url });
   }
 
-  async post<T>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
+  async post<T>(endpoint: string, data?: unknown): Promise<ApiResponse<T>> {
     const url = `${API_URL}${endpoint}`;
+    const isFormData = data instanceof FormData;
     const options: RequestInit = {
       method: 'POST',
-      headers: await this.getHeaders(true),
-      body: data ? JSON.stringify(data) : undefined,
+      headers: await this.getHeaders(true, isFormData),
+      body: isFormData ? (data as FormData) : (data ? JSON.stringify(data) : undefined),
       credentials: 'include',
     };
     const response = await fetch(url, options);
@@ -84,10 +92,24 @@ class ApiClient {
     return this.handleResponse<T>(response, { ...options, url });
   }
 
-  async put<T>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
+  async put<T>(endpoint: string, data?: unknown): Promise<ApiResponse<T>> {
     const url = `${API_URL}${endpoint}`;
+    const isFormData = data instanceof FormData;
     const options: RequestInit = {
       method: 'PUT',
+      headers: await this.getHeaders(true, isFormData),
+      body: isFormData ? (data as FormData) : (data ? JSON.stringify(data) : undefined),
+      credentials: 'include',
+    };
+    const response = await fetch(url, options);
+
+    return this.handleResponse<T>(response, { ...options, url });
+  }
+
+  async patch<T>(endpoint: string, data?: unknown): Promise<ApiResponse<T>> {
+    const url = `${API_URL}${endpoint}`;
+    const options: RequestInit = {
+      method: 'PATCH',
       headers: await this.getHeaders(true),
       body: data ? JSON.stringify(data) : undefined,
       credentials: 'include',
@@ -117,9 +139,9 @@ class ApiClient {
     this.refreshSubscribers = [];
   }
 
-  private async handleResponse<T>(response: Response, requestOptions?: any): Promise<ApiResponse<T>> {
+  private async handleResponse<T>(response: Response, requestOptions?: ApiRequestInit): Promise<ApiResponse<T>> {
     const contentType = response.headers.get('content-type');
-    let data: any;
+    let data: any /* eslint-disable-line @typescript-eslint/no-explicit-any */;
 
     if (contentType?.includes('application/json')) {
       data = await response.json();
@@ -141,7 +163,7 @@ class ApiClient {
             ...requestOptions,
             headers: newHeaders,
             _isRetry: true
-          } as any);
+          } as any /* eslint-disable-line @typescript-eslint/no-explicit-any */);
           return this.handleResponse<T>(retryResponse);
         }
       }
@@ -156,7 +178,7 @@ class ApiClient {
                 ...requestOptions,
                 headers: newHeaders,
                 _isRetry: true
-              } as any);
+              } as any /* eslint-disable-line @typescript-eslint/no-explicit-any */);
               resolve(this.handleResponse<T>(retryResponse));
             });
           });
@@ -197,7 +219,7 @@ class ApiClient {
                   ...requestOptions,
                   headers: newHeaders,
                   _isRetry: true
-                } as any);
+                } as any /* eslint-disable-line @typescript-eslint/no-explicit-any */);
                 return this.handleResponse<T>(retryResponse);
               }
             }
@@ -212,7 +234,7 @@ class ApiClient {
       }
 
       const error = new Error(data?.message || 'An error occurred');
-      (error as any).statusCode = response.status;
+      (error as any /* eslint-disable-line @typescript-eslint/no-explicit-any */).statusCode = response.status;
       throw error;
     }
 

@@ -8,7 +8,7 @@ export interface User {
   avatar_url?: string;
   bio?: string;
   role: 'user' | 'admin' | 'provider';
-  preferences?: any;
+  preferences?: Record<string, unknown>;
   created_at?: string;
   requires_password_change?: boolean;
   two_factor_enabled?: boolean;
@@ -80,13 +80,16 @@ export const authService = {
     return response.data!;
   },
 
-  async updateProfile(fullName?: string, phone?: string, bio?: string, avatarUrl?: string): Promise<User> {
-    const response = await apiClient.put<User>('/auth/profile', {
-      fullName,
-      phone,
-      bio,
-      avatarUrl,
-    });
+  async updateProfile(data: { fullName?: string; phone?: string; bio?: string; avatarUrl?: string }): Promise<User> {
+    const response = await apiClient.put<User>('/auth/profile', data);
+    return response.data!;
+  },
+
+  async uploadAvatar(file: File): Promise<{ avatar_url: string }> {
+    const formData = new FormData();
+    formData.append('avatar', file);
+    
+    const response = await apiClient.post<{ avatar_url: string }>('/auth/upload-avatar', formData);
     return response.data!;
   },
 
@@ -105,15 +108,15 @@ export const authService = {
     await apiClient.post('/auth/reset-password', { token, password });
   },
 
-  async updatePreferences(preferences: any): Promise<any> {
-    const response = await apiClient.put<any>('/auth/preferences', {
+  async updatePreferences(preferences: Record<string, unknown>): Promise<Record<string, unknown>> {
+    const response = await apiClient.put<Record<string, unknown>>('/auth/preferences', {
       preferences,
     });
     return response.data!;
   },
 
-  async toggleMFA(enabled: boolean): Promise<any> {
-    const response = await apiClient.put<any>('/auth/toggle-mfa', {
+  async toggleMFA(enabled: boolean): Promise<{ message: string }> {
+    const response = await apiClient.put<{ message: string }>('/auth/toggle-mfa', {
       enabled,
     });
     return response.data!;

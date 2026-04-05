@@ -1,7 +1,22 @@
 import pool from '../config/database.js';
 import { UnauthorizedError, NotFoundError, ValidationError } from '../utils/errors.js';
-import { v4 as uuidv4 } from 'uuid';
 import { sendEmail } from '../utils/email.js';
+import { createNotification, notifyAdmins } from './notificationController.js';
+import { generateReceipt } from './receiptController.js';
+
+function normalizeDate(dateValue) {
+  if (!dateValue) return null;
+  
+  const dateString = String(dateValue).trim();
+  const dateObj = new Date(dateString);
+  
+  if (Number.isNaN(dateObj.getTime())) {
+    throw new ValidationError(`Invalid date format: ${dateString}. Expected YYYY-MM-DD format.`);
+  }
+  
+  // Convert to ISO date string (YYYY-MM-DD)
+  return dateObj.toISOString().split('T')[0];
+}
 
 export async function createBooking(req, res) {
   if (!req.user) throw new UnauthorizedError('Not authenticated');
@@ -11,25 +26,39 @@ export async function createBooking(req, res) {
   // Support both frontend naming conventions
   const refId = referenceId || hotelId;
   const bType = bookingType || 'hotel';
-  const inDate = checkInDate || startDate;
-  const outDate = checkOutDate || endDate;
+  const inDateRaw = checkInDate || startDate;
+  const outDateRaw = checkOutDate || endDate;
   const price = totalPrice;
   const guestCount = numberOfGuests || guests || 1;
 
-  if (!refId || !inDate || !price) {
+  console.log('📅 Booking request received:', {
+    checkInDate,
+    checkOutDate,
+    startDate,
+    endDate,
+    inDateRaw,
+    outDateRaw,
+    bookingType,
+    referenceId,
+  });
+
+  if (!refId || !inDateRaw || !price) {
     throw new ValidationError('Reference ID, date, and price are required');
   }
 
-  // Hotels usually require a checkout date, but transport/activities/guides might not
-  const finalOutDate = outDate || inDate;
+  // Validate and normalize dates
+  const inDate = normalizeDate(inDateRaw);
+  const finalOutDate = outDateRaw ? normalizeDate(outDateRaw) : inDate;
+
+  console.log('📅 Dates after normalization:', { inDate, finalOutDate });
 
   const client = await pool.connect();
   try {
     const result = await client.query(
-      `INSERT INTO bookings (id, user_id, trip_id, booking_type, reference_id, room_id, check_in_date, check_out_date, total_price, number_of_guests, special_requests, status) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) 
+      `INSERT INTO bookings (user_id, trip_id, booking_type, reference_id, room_id, check_in_date, check_out_date, total_price, number_of_guests, special_requests, status) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) 
        RETURNING *`,
-      [uuidv4(), req.user.id, tripId || null, bType, refId, roomId || null, inDate, finalOutDate, price, guestCount, specialRequests || null, 'pending']
+      [req.user.id, tripId || null, bType, refId, roomId || null, inDate, finalOutDate, price, guestCount, specialRequests || null, 'pending']
     );
 
     const booking = result.rows[0];
@@ -53,10 +82,19 @@ export async function createBooking(req, res) {
       if (t.rows[0]) serviceName = t.rows[0].name;
     }
 
-    // Create In-App Notification
-    await client.query(
-      'INSERT INTO notifications (id, user_id, type, message) VALUES ($1, $2, $3, $4)',
-      [uuidv4(), req.user.id, 'booking_confirmation', `Booking confirmed for ${serviceName} on ${new Date(inDate).toLocaleDateString()}`]
+    // Create In-App Notifications
+    await createNotification(
+      req.user.id,
+      'booking_confirmation',
+      'Booking Confirmed',
+      `Your booking for ${serviceName} on ${new Date(inDate).toLocaleDateString()} has been confirmed.`
+    );
+
+    // Notify Admins about the new booking
+    await notifyAdmins(
+      'new_booking',
+      'New Booking Received',
+      `${user.full_name} just booked ${serviceName} for GH₵${price}.`
     );
 
     // Send Confirmation Email
@@ -120,7 +158,46 @@ export async function createBooking(req, res) {
         html: bookingHtml
       });
     } catch (emailErr) {
-      console.error('Booking confirmation email failed:', emailErr);
+      console.error('❌ Booking confirmation email failed:', emailErr);
+      // Create notification to alert user that email failed
+      try {
+        await createNotification(
+          req.user.id,
+          'email_failed',
+          'Email Delivery Issue',
+          `Your booking confirmation email could not be delivered. Check your booking details in your dashboard.`
+        );
+      } catch (notifErr) {
+        console.error('Failed to create notification:', notifErr);
+      }
+    }
+
+    // Generate Receipt
+    try {
+      const receiptData = {
+        user_id: req.user.id,
+        booking_id: booking.id,
+        booking_type: bType,
+        reference_id: refId,
+        service_name: serviceName,
+        check_in_date: inDate,
+        check_out_date: finalOutDate,
+        number_of_guests: guestCount,
+        special_requests: specialRequests,
+        total_price: price,
+        room_type: 'Standard Room',
+        payment_status: 'pending',
+        booking_status: booking.status
+      };
+      
+      const receipt = await generateReceipt(booking.id, receiptData);
+      console.log(`📄 Receipt generated for booking ${booking.id}: ${receipt.receipt_number}`);
+      
+      // Include receipt info in response
+      booking.receipt = receipt;
+    } catch (receiptErr) {
+      console.error('❌ Receipt generation failed:', receiptErr);
+      // Don't fail the booking creation if receipt generation fails
     }
 
     res.status(201).json({ success: true, data: booking });

@@ -29,6 +29,10 @@ router.post('/:id/itinerary', authenticateToken, (req, res, next) => {
   tripController.addItinerary(req, res).catch(next);
 });
 
+router.put('/:id/itinerary', authenticateToken, (req, res, next) => {
+  tripController.replaceItinerary(req, res).catch(next);
+});
+
 router.get('/:id/itinerary', (req, res, next) => {
   tripController.getItinerary(req, res).catch(next);
 });

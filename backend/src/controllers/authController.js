@@ -4,6 +4,7 @@ import { generateToken, generateRefreshToken, verifyRefreshToken } from '../util
 import { hashPassword, comparePassword } from '../utils/password.js';
 import { ValidationError, UnauthorizedError, ConflictError, NotFoundError, ForbiddenError } from '../utils/errors.js';
 import { sendEmail } from '../utils/email.js';
+import { notifyAdmins } from './notificationController.js';
 import { logSecurityEvent } from '../utils/logger.js';
 
 export async function register(req, res) {
@@ -83,10 +84,17 @@ export async function register(req, res) {
         html: welcomeHtml
       });
     } catch (emailErr) {
-      // We don't want to fail the whole registration if the welcome email fails,
-      // but we should log it.
-      console.error('Welcome email failed to send:', emailErr);
+      console.error('❌ Welcome email failed to send:', emailErr);
+      // Still register user successfully, but log the email failure
+      console.warn(`⚠️  User ${email} registered but welcome email could not be sent`);
     }
+
+    // Notify Admins
+    await notifyAdmins(
+      'user_registration',
+      'New User Registered',
+      `${fullName} (${email}) just joined the platform.`
+    );
 
     res.status(201).json({
       success: true,
@@ -241,6 +249,53 @@ export async function login(req, res) {
       userAgent
     });
 
+    // Send login notification email
+    const loginHtml = `
+      <div style="font-family: 'Inter', sans-serif; background-color: #f8fafc; padding: 40px; color: #1e293b; max-width: 600px; margin: 0 auto; border-radius: 16px;">
+        <div style="text-align: center; margin-bottom: 32px;">
+          <h2 style="margin: 0; color: #2D3FE6; font-size: 28px;">Login Successful ✅</h2>
+        </div>
+        <div style="background: white; padding: 32px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);">
+          <p style="color: #475569; font-size: 16px; line-height: 1.6; margin: 0 0 24px 0;">
+            Hello <strong>${user.full_name}</strong>,
+          </p>
+          <p style="color: #475569; font-size: 16px; line-height: 1.6; margin-bottom: 24px;">
+            You've successfully logged in to your TripEase Ghana account.
+          </p>
+          <div style="background: #f1f5f9; padding: 16px; border-radius: 8px; margin-bottom: 24px; border-left: 4px solid #2D3FE6;">
+            <p style="margin: 0; color: #64748b; font-size: 14px;">
+              <strong>Login Time:</strong> ${new Date().toLocaleString()}<br/>
+              <strong>Location:</strong> ${ipAddress || 'Unknown'}<br/>
+              <strong>If this wasn't you, please secure your account immediately.</strong>
+            </p>
+          </div>
+          <p style="color: #475569; font-size: 15px; line-height: 1.6;">
+            Ready to explore Ghana? <br/>
+            Browse hotels, guides, and activities to plan your next adventure!
+          </p>
+        </div>
+        <p style="text-align: center; color: #94a3b8; font-size: 12px; margin-top: 32px;">
+          &copy; ${new Date().getFullYear()} TripEase Ghana. All rights reserved.
+        </p>
+      </div>
+    `;
+
+    let emailStatus = 'pending';
+    try {
+      const emailResult = await sendEmail({
+        email: user.email,
+        subject: 'Login Alert - TripEase Ghana Account',
+        message: `Hello ${user.full_name},\n\nYou've successfully logged in to TripEase Ghana at ${new Date().toLocaleString()}.\n\nIf this wasn't you, please secure your account immediately.`,
+        html: loginHtml
+      });
+      console.log(`✅ Login email sent to ${user.email}:`, emailResult);
+      emailStatus = emailResult.id ? 'sent' : 'failed';
+    } catch (emailErr) {
+      console.error('❌ Login notification email failed:', emailErr);
+      console.error('Email error details:', emailErr.message);
+      emailStatus = 'failed';
+    }
+
     res.json({
       success: true,
       message: 'Login successful',
@@ -255,6 +310,7 @@ export async function login(req, res) {
         },
         token: accessToken,
         refreshToken,
+        emailStatus: emailStatus  // Include email status in response for debugging
       },
     });
   } finally {
@@ -495,6 +551,33 @@ export async function updateProfile(req, res) {
       success: true,
       message: 'Profile updated successfully',
       data: user,
+    });
+  } finally {
+    client.release();
+  }
+}
+
+export async function uploadAvatar(req, res) {
+  if (!req.user) {
+    throw new UnauthorizedError('User not authenticated');
+  }
+
+  if (!req.file) {
+    throw new ValidationError('No file uploaded');
+  }
+
+  const avatarUrl = `/uploads/profiles/${req.file.filename}`;
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      'UPDATE users SET avatar_url = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id, avatar_url',
+      [avatarUrl, req.user.id]
+    );
+
+    res.json({
+      success: true,
+      message: 'Avatar uploaded successfully',
+      data: result.rows[0],
     });
   } finally {
     client.release();

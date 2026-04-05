@@ -1,7 +1,11 @@
 import {
     Dialog,
     DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
 } from "@/components/ui/dialog";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { Button } from "@/components/ui/button";
 import { Booking } from "@/services/admin";
 import { Badge } from "@/components/ui/badge";
@@ -42,6 +46,12 @@ const BookingDialog = ({ booking, open, onOpenChange, onUpdateStatus }: BookingD
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[700px] p-0 overflow-hidden bg-transparent border-none shadow-none">
+                <VisuallyHidden>
+                    <DialogHeader>
+                        <DialogTitle>Booking Details - {booking.id}</DialogTitle>
+                        <DialogDescription>Detailed view of booking {booking.id} for {booking.customer_name}</DialogDescription>
+                    </DialogHeader>
+                </VisuallyHidden>
                 <div className="bg-white/95 backdrop-blur-xl border border-slate-200/60 rounded-[2.5rem] shadow-2xl flex flex-col w-full max-h-[85vh] overflow-hidden">
                     {/* Premium Header */}
                     <div className="px-8 pt-8 pb-4 shrink-0 border-b border-slate-100 bg-gradient-to-b from-slate-50/50 to-transparent sticky top-0 z-10 flex flex-row justify-between items-start">

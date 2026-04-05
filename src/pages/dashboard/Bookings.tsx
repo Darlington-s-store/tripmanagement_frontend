@@ -25,7 +25,7 @@ export default function BookingsDashboard() {
       setIsLoadingBookings(true);
       const data = await bookingsService.getUserBookings();
       setBookings(data);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error("Failed to load bookings");
       console.error(error);
     } finally {
@@ -42,7 +42,7 @@ export default function BookingsDashboard() {
       await bookingsService.cancelBooking(bookingId);
       toast.success("Booking cancelled successfully!");
       loadBookings();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(error.message || "Failed to cancel booking");
     }
   };

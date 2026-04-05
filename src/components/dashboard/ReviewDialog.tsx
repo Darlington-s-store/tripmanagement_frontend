@@ -53,7 +53,7 @@ const ReviewDialog: React.FC<ReviewDialogProps> = ({
             setRating(5);
             setTitle("");
             setComment("");
-        } catch (error: any) {
+        } catch (error: unknown) {
             toast.error(error.message || "Failed to submit review");
         } finally {
             setIsSubmitting(false);

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Star, Search, Eye, Trash2, Flag, CheckCircle, MessageSquare } from "lucide-react";
+import { Star, Search, Trash2, Flag, CheckCircle, MessageSquare, Loader2, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -9,10 +9,10 @@ import { adminService, Review } from "@/services/admin";
 import { toast } from "sonner";
 
 const statusColors: Record<string, string> = {
-  published: "bg-success/10 text-success",
-  pending: "bg-warning/10 text-warning",
-  flagged: "bg-destructive/10 text-destructive",
-  removed: "bg-muted text-muted-foreground",
+  published: "bg-green-100 text-green-700 border-green-200",
+  pending: "bg-amber-100 text-amber-700 border-amber-200",
+  flagged: "bg-red-100 text-red-700 border-red-200",
+  removed: "bg-gray-100 text-gray-500 border-gray-200",
 };
 
 const AdminReviews = () => {
@@ -29,19 +29,7 @@ const AdminReviews = () => {
     setIsLoading(true);
     try {
       const data = await adminService.getAllReviews();
-      const reviews = Array.isArray(data) ? data : [];
-
-      // Simulate/map visual fields that backend reviews might lack for dashboard display purposes
-      const mappedData = reviews.map(r => ({
-        ...r,
-        user: r.user || "User " + r.user_id.substring(0, 4),
-        service: r.service || "Booking " + r.booking_id.substring(0, 4),
-        type: r.type || "Service",
-        status: r.status || "published",
-        date: new Date(r.created_at).toLocaleDateString()
-      }));
-
-      setReviewsList(mappedData);
+      setReviewsList(data || []);
     } catch (error) {
       console.error("Failed to load reviews:", error);
       toast.error("Failed to load reviews");
@@ -51,28 +39,27 @@ const AdminReviews = () => {
   };
 
   const handleAction = async (id: string, action: string) => {
-    if (action === "removed") {
-      try {
+    try {
+      if (action === "removed") {
         await adminService.deleteReview(id);
         setReviewsList(reviewsList.filter(r => r.id !== id));
         toast.success("Review deleted successfully");
-      } catch (error) {
-        console.error("Failed to delete review:", error);
-        toast.error("Failed to delete review");
+      } else {
+        await adminService.updateReviewStatus(id, action);
+        setReviewsList(reviewsList.map((r) => r.id === id ? { ...r, status: action } : r));
+        toast.success(`Review ${action === "published" ? "approved" : "updated"}`);
       }
-    } else {
-      // Logic to actually flag or update a review could go here if the backend supports it.
-      // For now, we update local state.
-      setReviewsList(reviewsList.map((r) => r.id === id ? { ...r, status: action } : r));
-      toast.success(`Review status updated to ${action}`);
+    } catch (error) {
+      console.error("Failed to update review:", error);
+      toast.error("Operation failed");
     }
   };
 
   const filtered = reviewsList.filter((r) => {
+    const name = r.full_name || r.user || "Anonymous";
     const matchesSearch =
-      (r.user?.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (r.service?.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (r.comment.toLowerCase().includes(searchQuery.toLowerCase()));
+      name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      r.comment.toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesStatus = statusFilter === "all" || r.status === statusFilter;
     return matchesSearch && matchesStatus;
@@ -80,89 +67,137 @@ const AdminReviews = () => {
 
   return (
     <DashboardLayout role="admin">
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="space-y-6 max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
           <div>
-            <h2 className="font-display text-2xl font-bold">Review Moderation</h2>
-            <p className="text-muted-foreground">Monitor and moderate user reviews</p>
+            <h2 className="font-display text-3xl font-black text-gray-900">Review Moderation</h2>
+            <p className="text-gray-500 font-medium">Verify and publish traveler experiences</p>
           </div>
           <div className="flex gap-2">
-            <Badge variant="secondary" className="gap-1">
-              <Flag className="h-3 w-3" /> {reviewsList.filter((r) => r.status === "flagged").length} flagged
+            <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 px-3 py-1 text-sm font-bold animate-pulse">
+              <MessageSquare className="h-3.5 w-3.5 mr-1.5" /> {reviewsList.filter((r) => r.status === "pending").length} Pending
             </Badge>
-            <Badge variant="secondary" className="gap-1">
-              <MessageSquare className="h-3 w-3" /> {reviewsList.filter((r) => r.status === "pending").length} pending
+            <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 px-3 py-1 text-sm font-bold">
+              <Flag className="h-3.5 w-3.5 mr-1.5" /> {reviewsList.filter((r) => r.status === "flagged").length} Flagged
             </Badge>
           </div>
         </div>
 
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <div className="flex flex-1 items-center gap-2 rounded-xl border border-border px-3">
-            <Search className="h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search reviews..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="border-0 shadow-none focus-visible:ring-0" />
+        <div className="flex flex-col sm:flex-row items-center gap-4 bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+          <div className="relative flex-1 w-full">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input 
+              placeholder="Search by reviewer or content..." 
+              value={searchQuery} 
+              onChange={(e) => setSearchQuery(e.target.value)} 
+              className="pl-11 h-12 bg-gray-50/50 border-gray-100 focus:bg-white transition-all rounded-xl"
+            />
           </div>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[140px]"><SelectValue placeholder="Status" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
+            <SelectTrigger className="w-full sm:w-[180px] h-12 bg-gray-50/50 border-gray-100 rounded-xl font-bold">
+              <SelectValue placeholder="All Status" />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl">
+              <SelectItem value="all">All Reviews</SelectItem>
               <SelectItem value="published">Published</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="pending">Pending Approval</SelectItem>
               <SelectItem value="flagged">Flagged</SelectItem>
               <SelectItem value="removed">Removed</SelectItem>
             </SelectContent>
           </Select>
+          <Button onClick={loadReviews} variant="outline" className="h-12 w-12 p-0 rounded-xl">
+            <Loader2 className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+          </Button>
         </div>
 
-        <div className="space-y-3">
+        <div className="grid gap-4">
           {isLoading ? (
-            <div className="flex h-32 items-center justify-center rounded-xl border bg-card">
-              <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+            <div className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border border-gray-100 shadow-sm">
+              <Loader2 className="h-10 w-10 text-primary animate-spin mb-4" />
+              <p className="font-bold text-gray-400 tracking-widest uppercase text-sm">Fetching Reviews...</p>
             </div>
           ) : filtered.length === 0 ? (
-            <div className="flex h-32 items-center justify-center rounded-xl border bg-card">
-              <p className="text-muted-foreground">No reviews found.</p>
+            <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-gray-200">
+              <MessageSquare className="h-12 w-12 text-gray-200 mx-auto mb-4" />
+              <p className="text-gray-500 font-bold">No reviews found matching your criteria.</p>
             </div>
           ) : (
             filtered.map((r) => (
-              <div key={r.id} className={`rounded-xl border bg-card p-5 ${r.status === "flagged" ? "border-destructive/30" : "border-border"}`}>
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div 
+                key={r.id} 
+                className={`group relative bg-white border rounded-3xl p-6 shadow-sm transition-all hover:shadow-md ${
+                  r.status === "flagged" ? "border-red-200 bg-red-50/10" : "border-gray-100"
+                }`}
+              >
+                <div className="flex flex-col lg:flex-row gap-6">
                   <div className="flex-1">
-                    <div className="mb-2 flex items-center gap-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent font-medium text-primary text-xs">
-                        {r.user ? r.user.split(" ").map((n) => n[0]).join("").substring(0, 2) : '?'}
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary font-black text-xl">
+                          {(r.full_name || r.user || "A").charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="font-black text-gray-900 text-lg leading-none">
+                            {r.full_name || r.user || "Anonymous"}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1.5">
+                            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center bg-gray-50 px-2 py-0.5 rounded">
+                              <MapPin className="h-3 w-3 mr-1 text-primary" /> {r.location || "Traveler"}
+                            </span>
+                            <span className="text-gray-300">•</span>
+                            <span className="text-xs font-bold text-gray-400">
+                              {new Date(r.created_at).toLocaleDateString(undefined, { dateStyle: 'medium' })}
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium">{r.user}</p>
-                        <p className="text-xs text-muted-foreground">on {r.service} • {(r as any).date}</p>
-                      </div>
+                      <Badge variant="outline" className={`rounded-full px-3 py-1 font-bold text-xs uppercase tracking-tighter ${statusColors[r.status]}`}>
+                        {r.status}
+                      </Badge>
                     </div>
-                    <div className="mb-2 flex items-center gap-2">
-                      <div className="flex gap-0.5">
-                        {Array.from({ length: 5 }).map((_, i) => (
-                          <Star key={i} className={`h-3 w-3 ${i < r.rating ? "fill-primary text-primary" : "text-muted"}`} />
-                        ))}
-                      </div>
-                      <Badge variant="secondary" className="text-xs">{r.type}</Badge>
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium capitalize ${statusColors[r.status!]}`}>{r.status}</span>
+
+                    <div className="flex items-center gap-1 mb-4">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Star key={i} className={`h-4 w-4 ${i < r.rating ? "fill-amber-400 text-amber-400" : "text-gray-200"}`} />
+                      ))}
                     </div>
-                    <p className="text-sm text-muted-foreground">"{r.comment}"</p>
+
+                    <div className="bg-gray-50/50 rounded-2xl p-4 border border-gray-50 group-hover:bg-white group-hover:border-gray-100 transition-colors">
+                      <p className="text-gray-700 leading-relaxed font-medium italic">
+                        "{r.comment}"
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1">
+
+                  <div className="flex flex-row lg:flex-col items-center justify-end gap-2 sm:self-end lg:self-start lg:pt-2">
                     {r.status === "pending" && (
-                      <Button size="sm" variant="outline" className="gap-1 text-success hover:bg-success/10" onClick={() => handleAction(r.id, "published")}>
-                        <CheckCircle className="h-3 w-3" /> Approve
+                      <Button 
+                        size="lg" 
+                        onClick={() => handleAction(r.id, "published")}
+                        className="bg-green-600 hover:bg-green-700 text-white font-black px-6 rounded-2xl shadow-lg shadow-green-100"
+                      >
+                        <CheckCircle className="h-4 w-4 mr-2" /> Approve
                       </Button>
                     )}
                     {r.status === "flagged" && (
-                      <Button size="sm" variant="outline" className="gap-1 text-success hover:bg-success/10" onClick={() => handleAction(r.id, "published")}>
-                        <CheckCircle className="h-3 w-3" /> Unflag
+                      <Button 
+                        size="lg" 
+                        variant="outline"
+                        onClick={() => handleAction(r.id, "published")}
+                        className="border-green-200 text-green-700 hover:bg-green-50 font-black px-6 rounded-2xl"
+                      >
+                         Unflag Review
                       </Button>
                     )}
-                    {r.status !== "removed" && (
-                      <Button size="sm" variant="outline" className="gap-1 text-destructive hover:bg-destructive/10" onClick={() => handleAction(r.id, "removed")}>
-                        <Trash2 className="h-3 w-3" /> Remove
-                      </Button>
-                    )}
+                    <Button 
+                      size="icon" 
+                      variant="ghost" 
+                      onClick={() => handleAction(r.id, "removed")}
+                      className="h-12 w-12 rounded-2xl text-gray-400 hover:text-red-600 hover:bg-red-50"
+                      title="Remove this review"
+                    >
+                      <Trash2 className="h-5 w-5" />
+                    </Button>
                   </div>
                 </div>
               </div>

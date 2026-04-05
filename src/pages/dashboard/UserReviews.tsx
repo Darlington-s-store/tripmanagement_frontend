@@ -24,7 +24,7 @@ const UserReviews = () => {
     try {
       const data = await reviewsService.getUserReviews();
       setReviews(data);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error("Failed to load reviews");
       console.error(error);
     } finally {
@@ -38,7 +38,7 @@ const UserReviews = () => {
       await reviewsService.deleteReview(reviewId);
       toast.success("Review deleted successfully");
       loadReviews();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error("Failed to delete review");
     }
   };

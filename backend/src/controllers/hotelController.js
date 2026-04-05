@@ -1,6 +1,5 @@
 import pool from '../config/database.js';
 import { NotFoundError } from '../utils/errors.js';
-import { v4 as uuidv4 } from 'uuid';
 
 export async function getAllHotels(req, res) {
   const { location, region, minPrice, maxPrice, rating, amenities, sortBy, limit = 20, offset = 0 } = req.query;
@@ -104,10 +103,10 @@ export async function createHotel(req, res) {
   const client = await pool.connect();
   try {
     const result = await client.query(
-      `INSERT INTO hotels (id, name, location, region, price_per_night, rating, image_url, images, description, amenities, total_rooms, available_rooms) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $11) 
+      `INSERT INTO hotels (name, location, region, price_per_night, rating, image_url, images, description, amenities, total_rooms, available_rooms) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $10) 
        RETURNING *`,
-      [uuidv4(), name, location, region, pricePerNight, rating || 0, imageUrl, JSON.stringify(images || []), description, amenities, totalRooms || 0]
+      [name, location, region, pricePerNight, rating || 0, imageUrl, JSON.stringify(images || []), description, amenities, totalRooms || 0]
     );
     res.status(201).json({ success: true, data: result.rows[0] });
   } finally {
@@ -117,7 +116,7 @@ export async function createHotel(req, res) {
 
 export async function updateHotel(req, res) {
   const { id } = req.params;
-  const { name, location, region, price_per_night, rating, image_url, images, description, amenities } = req.body;
+  const { name, location, region, price_per_night, rating, image_url, images, description, amenities, total_rooms, available_rooms } = req.body;
   const client = await pool.connect();
   try {
     const result = await client.query(
@@ -126,9 +125,10 @@ export async function updateHotel(req, res) {
        price_per_night = COALESCE($4, price_per_night), rating = COALESCE($5, rating),
        image_url = COALESCE($6, image_url), images = COALESCE($7, images),
        description = COALESCE($8, description), amenities = COALESCE($9, amenities),
-       updated_at = CURRENT_TIMESTAMP WHERE id = $10 
+       total_rooms = COALESCE($10, total_rooms), available_rooms = COALESCE($11, available_rooms),
+       updated_at = CURRENT_TIMESTAMP WHERE id = $12 
        RETURNING *`,
-      [name || null, location || null, region || null, price_per_night || null, rating || null, image_url || null, images ? JSON.stringify(images) : null, description || null, amenities || null, id]
+      [name || null, location || null, region || null, price_per_night || null, rating || null, image_url || null, images ? JSON.stringify(images) : null, description || null, amenities || null, total_rooms || null, available_rooms || null, id]
     );
     if (result.rows.length === 0) throw new NotFoundError('Hotel not found');
     res.json({ success: true, message: 'Hotel updated', data: result.rows[0] });
@@ -154,10 +154,10 @@ export async function createHotelRoom(req, res) {
   const client = await pool.connect();
   try {
     const result = await client.query(
-      `INSERT INTO hotel_rooms (id, hotel_id, room_type, price_per_night, capacity, available_count, amenities, description, images) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) 
+      `INSERT INTO hotel_rooms (hotel_id, room_type, price_per_night, capacity, available_count, amenities, description, images) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
        RETURNING *`,
-      [uuidv4(), hotel_id, room_type, price_per_night, capacity, available_count, amenities, description, JSON.stringify(images || [])]
+      [hotel_id, room_type, price_per_night, capacity, available_count, amenities, description, JSON.stringify(images || [])]
     );
     res.status(201).json({ success: true, data: result.rows[0] });
   } finally {

@@ -10,7 +10,8 @@ interface AuthContextType {
   verifyMFA: (email: string, code: string) => Promise<User>;
   register: (email: string, password: string, fullName: string, phone?: string) => Promise<void>;
   logout: () => void;
-  updateProfile: (fullName?: string, phone?: string, bio?: string, avatarUrl?: string) => Promise<void>;
+  updateProfile: (data: { fullName?: string; phone?: string; bio?: string; avatarUrl?: string }) => Promise<void>;
+  uploadAvatar: (file: File) => Promise<string>;
   toggleMFA: (enabled: boolean) => Promise<void>;
 }
 
@@ -94,24 +95,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   };
 
-  const updateProfile = async (fullName?: string, phone?: string, bio?: string, avatarUrl?: string) => {
-    try {
-      const updatedUser = await authService.updateProfile(fullName, phone, bio, avatarUrl);
-      setUser(updatedUser);
-    } catch (error) {
-      throw error;
+  const updateProfile = async (data: { fullName?: string; phone?: string; bio?: string; avatarUrl?: string }) => {
+    const updatedUser = await authService.updateProfile(data);
+    setUser(updatedUser);
+  };
+
+  const uploadAvatar = async (file: File) => {
+    const { avatar_url } = await authService.uploadAvatar(file);
+    if (user) {
+      setUser({ ...user, avatar_url });
     }
+    return avatar_url;
   };
 
   const toggleMFA = async (enabled: boolean) => {
-    try {
-      await authService.toggleMFA(enabled);
-      // Update user in context
-      if (user) {
-        setUser({ ...user, two_factor_enabled: enabled });
-      }
-    } catch (error) {
-      throw error;
+    await authService.toggleMFA(enabled);
+    // Update user in context
+    if (user) {
+      setUser({ ...user, two_factor_enabled: enabled });
     }
   };
 
@@ -125,12 +126,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     register,
     logout,
     updateProfile,
+    uploadAvatar,
     toggleMFA,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {

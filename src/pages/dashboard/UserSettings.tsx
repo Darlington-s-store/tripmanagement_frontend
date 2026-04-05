@@ -61,7 +61,7 @@ const UserSettings = () => {
         newPassword: "",
         confirmPassword: "",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to update password:", error);
       toast.error(error.message || "Failed to update password");
     } finally {
@@ -156,7 +156,7 @@ const UserSettings = () => {
                     try {
                       await toggleMFA(checked);
                       toast.success(`Multi-Factor Authentication ${checked ? "enabled" : "disabled"}`);
-                    } catch (error: any) {
+                    } catch (error: unknown) {
                       console.error("Failed to toggle MFA:", error);
                       toast.error(error.message || "Failed to toggle MFA");
                     } finally {

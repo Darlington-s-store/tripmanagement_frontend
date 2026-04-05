@@ -111,7 +111,7 @@ export default function AdminEditUser() {
       });
       toast.success(`${form.full_name}'s profile updated.`);
       navigate("/admin/users");
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast.error(err.message || "Save failed. Please try again.");
     } finally {
       setIsSaving(false);
